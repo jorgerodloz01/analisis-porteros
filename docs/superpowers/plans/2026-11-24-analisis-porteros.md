@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** PWA para iPad que registra acciones de porteros sobre un campo táctil (en directo o sobre vídeo cargado), y genera informe por partido y acumulado de temporada por portero.
+**Goal:** PWA para iPad que registra acciones de porteros sobre un campo táctil (en directo o en diferido viendo el vídeo en otro dispositivo, con cronómetro), y genera informe por partido y acumulado de temporada por portero.
 
-**Architecture:** Sitio estático sin compilación. Lógica pura (cálculos, catálogo de acciones) en módulos ES testeados con `node --test`; persistencia en IndexedDB; UI en módulos por pantalla que renderizan DOM/SVG. Service worker para uso sin conexión. Vídeo vía `<input type=file>` + `URL.createObjectURL` (no se copia).
+**Architecture:** Sitio estático sin compilación. Lógica pura (cálculos, catálogo de acciones) en módulos ES testeados con `node --test`; persistencia en IndexedDB; UI en módulos por pantalla que renderizan DOM/SVG. Service worker para uso sin conexión.
 
 **Tech Stack:** HTML/CSS/JS (ES2022 módulos), IndexedDB, SVG, Service Worker, `node:test` (Node 22), Playwright (preinstalado) para pruebas de navegador con viewport iPad (1180×820).
 
@@ -19,14 +19,13 @@
 - Tiempo de acción: `half ∈ {1,2}` y `t` = segundos desde el pitido inicial de esa parte. Minuto mostrado: `half1 → floor(t/60)+1`, `half2 → 45+floor(t/60)+1`.
 - Porcentajes siempre con n: `"67 % (4/6)"`; denominador 0 → `"— (0/0)"`.
 - Línea de destino: `y<1/3 → 1`, `y<2/3 → 2`, resto `3`.
-- Retroceso automático del vídeo al empezar acción: 3 s.
 - Recordatorio de copia: al finalizar partido y si `lastBackup` > 7 días.
 - Fotos de portero reducidas a 256 px lado mayor, JPEG calidad 0.85, guardadas como dataURL.
 
 ## Review Focus
 
 1. Safari se recarga/cierra a mitad de partido en directo → el cronómetro reanuda el tiempo correcto (estado del reloj persistido como `{running, startedAt, accumulated}`) y no se pierde ninguna acción guardada. Test en Task 4.
-2. Modo vídeo sin pitido inicial marcado, o archivo re-seleccionado con distinto nombre/tamaño → no se registra con tiempo erróneo: se pide marcar el pitido / se avisa del archivo distinto. Tests en Task 1 (`halfAndTFromVideo` devuelve null) y Task 5.
+2. En diferido se pausa/ajusta el cronómetro o se cambia de parte con acciones ya guardadas → las acciones conservan su minuto (ajustar el reloj no las altera) y se puede corregir el minuto de una acción al editarla. Test en Task 4.
 3. Partido sin acciones de un tipo o portero con 0 minutos → informes muestran `— (0/0)` y por-90 `—`, nunca `NaN`/`Infinity`. Test en Task 1.
 4. Importar un archivo corrupto o de otra app → se rechaza con mensaje y los datos existentes quedan intactos. Test en Task 3.
 5. Foto de 12 MP desde el carrete → se reduce y guarda sin bloquear; el formulario no se rompe con HEIC no decodificable (mensaje de error). Test en Task 3 (reducción) y manejo de error en el código.
@@ -47,7 +46,7 @@ js/app.js                router por hash, navegación, registro del SW
 js/ui/pitch.js           SVG campo y portería 3×3, conversión toque→coords
 js/ui/setup.js           temporadas, porteros (foto), plantilla
 js/ui/matches.js         lista y alta/edición de partidos
-js/ui/register.js        pantalla de registro (directo + vídeo)
+js/ui/register.js        pantalla de registro (cronómetro)
 js/ui/report.js          informe de partido
 js/ui/season.js          acumulado de temporada y comparación
 tests/logic.test.js, tests/catalog.test.js, tests/backup.test.js   node:test
@@ -64,8 +63,6 @@ Player  {id, number, name}
 Match   {id, seasonId, date /*YYYY-MM-DD*/, rival, home /*bool*/, competition,
          goalsFor, goalsAgainst,
          keepers: [{keeperId, minutes}],
-         video: {name, size} | null,
-         sync: {1: number|null, 2: number|null},     // segundos de vídeo del pitido de cada parte
          clock: {half, running, startedAt /*ms epoch|null*/, accumulated /*s*/},
          finished /*bool*/}
 Action  {id, matchId, keeperId, half, t, type, points: {[stepKey]: {x,y} | cell}, attrs: {[key]: value}, note}
@@ -82,8 +79,6 @@ IDs: `crypto.randomUUID()`.
 - `destLine(y: number) -> 1|2|3`
 - `minuteLabel(half, t) -> string` (`"12'"`, `"47'"`)
 - `clockSeconds(clock, nowMs) -> number` (accumulated + elapsed si running)
-- `videoTimeOf(match, action) -> number|null` (`sync[half] + t`, null si sync falta)
-- `halfAndTFromVideo(match, v) -> {half, t}|null` (half 2 si `sync[2]!=null && v>=sync[2]`; null si la parte resultante no tiene sync o `t<0`)
 - `pct(n, d) -> {n, d, value|null}`, `fmtPct(p) -> string`
 - `per90(value, minutes) -> number|null`
 - `matchStats(actions) -> Stats` (ver Step 1), `seasonStats(matches, actions, keeperId) -> {totals: Stats, minutes, perMatch: [{match, stats, minutes}]}`
@@ -93,8 +88,6 @@ IDs: `crypto.randomUUID()`.
   - `destLine(0.1)===1`, `destLine(0.5)===2`, `destLine(0.9)===3`, `destLine(1/3)===2`.
   - `minuteLabel(1,0)==="1'"`, `minuteLabel(2,125)==="48'"`.
   - `clockSeconds({running:true,startedAt:1000,accumulated:60}, 31000)===90`; parado → `accumulated`.
-  - `videoTimeOf({sync:{1:30,2:3100}}, {half:2,t:10})===3110`; con `sync:{1:30,2:null}` y half 2 → `null`.
-  - `halfAndTFromVideo({sync:{1:30,2:3100}}, 3200)` → `{half:2,t:100}`; `(…, 10)` → `null`; con `sync:{1:null,2:null}` → `null`.
   - `fmtPct(pct(4,6))==="67 % (4/6)"`, `fmtPct(pct(0,0))==="— (0/0)"`.
   - `per90(3, 0)===null`, `per90(3, 45)===6`.
   - `matchStats` con fixture: 3 tiros (gol con `evitable:'si'`, blocaje, fuera), 1 penalti gol, 2 centros (sale+exito+valoracion correcta; se_queda+valoracion debia_salir), 3 distribuciones (completado y=0.5, perdido y=0.8, segunda_ganada y=0.2):
@@ -159,51 +152,38 @@ Tabs: defensa=[tiro,centro,aereo,salida], distribucion=[pase,mano,volea,saque_pu
 - Consumes: `TABS, TYPES, missingRequired` (Task 2); `clockSeconds, minuteLabel, destLine` (Task 1); `db.*` (Task 3).
 - Produces: `pitchSVG({points, onTap}) -> SVGElement` (campo vertical, portería propia abajo, líneas punteadas en y=1/3 y 2/3, onTap recibe `{x,y}` normalizados con `getBoundingClientRect`); `goalSVG({cell, onTap}) -> SVGElement` (3×3); `drawMarkers(svg, points)`.
 - `matches.js`: lista de partidos de la temporada activa (fecha desc) con acceso a Registrar / Informe / Borrar (confirm); alta: fecha, rival, local, competición, porteros con minutos (por defecto 90), once opcional (selección de plantilla).
-- `register.js` (layout spec §5.3): cabecera (rival, marcador editable, reloj, Iniciar/Pausa, 1.ª/2.ª parte, Finalizar, Informe); pestañas; botones de tipo; panel central muestra el paso activo (pitch/goal/opciones como botones grandes/receptor desde el once o teclado numérico); barra de pasos numerados (saltables, los ★ marcados); botón Guardar deshabilitado mientras `missingRequired` no vacío; panel derecho: portero seleccionado (foto+nombre, cambio rápido entre los del partido) y lista de acciones (minuto, tipo, resultado; tocar → editar; borrar con confirm; Deshacer la última). Al seleccionar tipo se fija `half` y `t = clockSeconds(match.clock, Date.now())`. Avance automático al siguiente paso tras cada toque. Cada guardado → `db.put('actions')` inmediato. Reloj persistido en `match.clock` en cada Iniciar/Pausa/cambio de parte (cambio de parte reinicia `accumulated=0`). Finalizar → `finished=true`, aviso de copia de seguridad con botón Exportar.
+- `register.js` (layout spec §5.3): cabecera (rival, marcador editable, reloj, Iniciar/Pausa, 1.ª/2.ª parte, Finalizar, Informe); pestañas; botones de tipo; panel central muestra el paso activo (pitch/goal/opciones como botones grandes/receptor desde el once o teclado numérico); barra de pasos numerados (saltables, los ★ marcados); botón Guardar deshabilitado mientras `missingRequired` no vacío; panel derecho: portero seleccionado (foto+nombre, cambio rápido entre los del partido) y lista de acciones (minuto, tipo, resultado; tocar → editar; borrar con confirm; Deshacer la última). Al seleccionar tipo se fija `half` y `t = clockSeconds(match.clock, Date.now())`. Avance automático al siguiente paso tras cada toque. Cada guardado → `db.put('actions')` inmediato. Ajuste del reloj ±10 s / ±1 min (para cuadrar con el vídeo en diferido). Al editar una acción se puede corregir su parte y minuto. Reloj persistido en `match.clock` en cada Iniciar/Pausa/cambio de parte (cambio de parte reinicia `accumulated=0`). Finalizar → `finished=true`, aviso de copia de seguridad con botón Exportar.
 
-- [ ] **Step 1: E2E failing** `e2e/register-live.mjs`: con datos sembrados vía `replaceAll` (temporada, portero, partido): Iniciar reloj; registrar tiro (toque campo, toque portería, resultado "Gol", evitable "Sí") → Guardar; lista muestra 1 acción con `1'`; registrar pase (origen, destino en y≈0.8, resultado completado); **recargar la página** → 2 acciones listadas y reloj sigue corriendo con tiempo ≥ el previo; Guardar está deshabilitado tras elegir tipo tiro sin toques; borrar una acción → 1 restante. Imprime `OK`.
+- [ ] **Step 1: E2E failing** `e2e/register-live.mjs`: con datos sembrados vía `replaceAll` (temporada, portero, partido): Iniciar reloj; registrar tiro (toque campo, toque portería, resultado "Gol", evitable "Sí") → Guardar; lista muestra 1 acción con `1'`; registrar pase (origen, destino en y≈0.8, resultado completado); **recargar la página** → 2 acciones listadas y reloj sigue corriendo con tiempo ≥ el previo; Guardar está deshabilitado tras elegir tipo tiro sin toques; borrar una acción → 1 restante; ajustar reloj +1 min → el minuto de las acciones ya guardadas no cambia. Imprime `OK`.
 - [ ] **Step 2:** run → FAIL. **Step 3:** implementar. **Step 4:** run → `OK`; `npm test` PASS.
 - [ ] **Step 5:** captura `e2e/shots/register.png` y revisión visual (alineación, nada cortado en 1180×820 y 820×1180 no requerido). Commit `feat: registro en directo`.
 
-### Task 5: Modo vídeo y sincronización
-
-**Files:** Modify `js/ui/register.js`, `styles.css`; Create `e2e/register-video.mjs`, `e2e/fixtures/clip.mp4` (generado con ffmpeg si está disponible, si no un webm grabado por canvas+MediaRecorder en el propio test).
-
-**Interfaces:** Consumes `videoTimeOf, halfAndTFromVideo` (Task 1).
-- Conmutador Directo/Vídeo en cabecera. Vídeo: botón "Cargar vídeo" (`input type=file accept="video/*"`); si `match.video` existe y nombre/tamaño difieren → `confirm("Este archivo no coincide con el vídeo del partido (nombre/tamaño). ¿Usarlo igualmente?")`; guarda `{name,size}`.
-- Controles: −5, −2, play/pausa, +2, +5, velocidad 0,5/1/2. Botones "Marcar pitido 1.ª parte" / "2.ª parte" → `sync[h]=video.currentTime`.
-- Al elegir tipo en modo vídeo: `video.pause()`, `currentTime -= 3` (mín 0), `half/t` de `halfAndTFromVideo(match, currentTime)`; si null → aviso "Marca primero el pitido inicial de esta parte" y no se inicia la acción. Al guardar: `play()`.
-- Lista de acciones: si `videoTimeOf` ≠ null y hay vídeo cargado, icono ▶ que hace `currentTime = videoTimeOf(...)`.
-
-- [ ] **Step 1: E2E failing**: cargar clip; elegir tipo sin sync → aviso visible; marcar pitido 1.ª en t=1 s; avanzar a 4 s; registrar tiro → acción con `t≈0` (4−3−1, tolerancia ±0,5); pulsar ▶ de la acción → `currentTime≈1`. Acción de directo previa (half1, t=2) obtiene ▶ tras sincronizar. Imprime `OK`.
-- [ ] **Steps 2–4:** FAIL → implementar → `OK`. **Step 5:** commit `feat: modo vídeo y sincronización`.
-
-### Task 6: Informe de partido
+### Task 5: Informe de partido
 
 **Files:** Create `js/ui/report.js`, `e2e/report.mjs`; Modify `styles.css` (`@media print`: fondo blanco, sin navegación, saltos de página por sección, A4 horizontal).
 
-**Interfaces:** Consumes `matchStats, fmtPct, toCSV, videoTimeOf, minuteLabel` (Task 1), `pitchSVG/goalSVG/drawMarkers` (Task 4).
-- Selector de portero (si jugaron varios) o "Todos". Secciones spec §5.5, cada métrica con `fmtPct`. Mapa de tiros (color por resultado: gol rojo, parada verde, fuera gris, leyenda), portería 3×3 con conteo tiros/goles por celda, mapa de destinos de distribución (verde éxito / rojo pérdida) con origen→destino como línea. Lista de acciones con ▶ (navega a registro en modo vídeo en ese instante si hay vídeo cargado en la sesión; si no, texto "Carga el vídeo en Registro"). Botones "PDF" (`window.print()`) y "CSV" (columnas: `fecha;rival;portero;parte;minuto;tipo;` + todas las keys de atributos de TYPES + `origen_x;origen_y;destino_x;destino_y;porteria;linea_destino;nota`).
+**Interfaces:** Consumes `matchStats, fmtPct, toCSV, minuteLabel` (Task 1), `pitchSVG/goalSVG/drawMarkers` (Task 4).
+- Selector de portero (si jugaron varios) o "Todos". Secciones spec §5.5, cada métrica con `fmtPct`. Mapa de tiros (color por resultado: gol rojo, parada verde, fuera gris, leyenda), portería 3×3 con conteo tiros/goles por celda, mapa de destinos de distribución (verde éxito / rojo pérdida) con origen→destino como línea. Lista de acciones (minuto, tipo, resultado, nota) para localizar cada jugada en el vídeo. Botones "PDF" (`window.print()`) y "CSV" (columnas: `fecha;rival;portero;parte;minuto;tipo;` + todas las keys de atributos de TYPES + `origen_x;origen_y;destino_x;destino_y;porteria;linea_destino;nota`).
 
 - [ ] **Step 1: E2E failing**: con fixture sembrada (misma de Task 1 traducida a acciones), la página contiene `"50 % (1/2)"` (paradas) y `"— (0/0)"` en 1v1; descarga CSV tiene 1+9 líneas y cabecera empieza por `fecha;rival`; `page.pdf()` en emulación print no lanza. Imprime `OK`.
 - [ ] **Steps 2–4.** **Step 5:** captura `e2e/shots/report.png` + PDF de muestra; revisión visual. Commit `feat: informe de partido`.
 
-### Task 7: Acumulado de temporada
+### Task 6: Acumulado de temporada
 
 **Files:** Create `js/ui/season.js`, `e2e/season.mjs`.
 
 **Interfaces:** Consumes `seasonStats, per90, fmtPct, toCSV`.
-- Filtros: temporada, competición, local/visitante. Vista por portero: totales, por-90 (`—` si null), tabla partido a partido (fecha, rival, min, % paradas, goles, % distribución, % decisiones centros), gráfico de líneas SVG de 3 métricas (eje x partidos por fecha, puntos con n<3 en hueco). Vista comparación: tabla porteros en columnas. PDF/CSV igual que Task 6.
+- Filtros: temporada, competición, local/visitante. Vista por portero: totales, por-90 (`—` si null), tabla partido a partido (fecha, rival, min, % paradas, goles, % distribución, % decisiones centros), gráfico de líneas SVG de 3 métricas (eje x partidos por fecha, puntos con n<3 en hueco). Vista comparación: tabla porteros en columnas. PDF/CSV igual que Task 5.
 
 - [ ] **Step 1: E2E failing**: 2 porteros, 3 partidos; vista portero A muestra minutos `135`, tabla de 2 filas; portero con 0 min muestra `—` en por-90 y ningún `NaN` en `document.body.innerText`. `OK`.
 - [ ] **Steps 2–4.** **Step 5:** captura + commit `feat: acumulado de temporada`.
 
-### Task 8: PWA sin conexión, publicación y README
+### Task 7: PWA sin conexión, publicación y README
 
 **Files:** Create `sw.js`, `manifest.webmanifest`, `icon-192.png`, `icon-512.png` (generados con canvas en un script Playwright, icono guante/portería simple), `README.md`; Modify `index.html` (manifest, `apple-touch-icon`, `apple-mobile-web-app-capable`), `js/app.js` (registrar SW).
 
 - `sw.js`: precache de todos los archivos estáticos con versión `CACHE='porteros-v1'`; estrategia cache-first con actualización en segundo plano; nunca cachea `blob:`.
-- README (español): crear cuenta GitHub, subir repo, activar Pages (rama `main`, raíz), abrir URL en Safari del iPad → Compartir → "Añadir a pantalla de inicio"; flujo de uso; copias de seguridad; limitación del vídeo.
+- README (español): crear cuenta GitHub, subir repo, activar Pages (rama `main`, raíz), abrir URL en Safari del iPad → Compartir → "Añadir a pantalla de inicio"; flujo de uso; copias de seguridad.
 
 - [ ] **Step 1: E2E failing** `e2e/offline.mjs`: cargar app, esperar SW `ready`, `context.setOffline(true)`, recargar → la app renderiza la lista de partidos. `OK`.
 - [ ] **Steps 2–4.** **Step 5:** ejecutar todos (`npm test` y cada `e2e/*.mjs`) → todo PASS/`OK`. Commit `feat: PWA offline y documentación`.

@@ -2,6 +2,8 @@
 
 Fecha: 2026-11-24 · Autor del diseño: Claude, a partir de la conversación con Jorge.
 
+> **Cambio (2026-11-24):** Jorge decide **no cargar el vídeo en la app** para simplificar. En diferido el vídeo se ve en otro dispositivo y se registra con el cronómetro (pausable y ajustable). Se eliminan: reproductor, sincronización con pitido inicial y enlaces acción→vídeo. Lo que sigue en este documento sobre vídeo queda sin efecto.
+
 ## 1. Intención
 
 Jorge (entrenador de porteros) necesita registrar desde su iPad, mientras ve un partido **en directo o en vídeo**, todas las acciones de sus porteros tocando sobre un campo dibujado, y obtener:
@@ -16,8 +18,7 @@ El objetivo es dar feedback objetivo a los porteros y apoyar decisiones de entre
 **Objetivos**
 - Registro rápido: una acción típica en ≤ 6 toques; todos los pasos de detalle son opcionales (se puede guardar en cualquier paso).
 - Funciona sin conexión en el estadio.
-- Vídeo cargado dentro de la app, cada acción enlazada a su instante.
-- Registro en directo con cronómetro que luego se enlaza al vídeo marcando el pitido inicial de cada parte.
+- Registro con cronómetro pausable y ajustable, válido en directo y en diferido.
 - Portero seleccionable con nombre y foto.
 - Informe exportable a PDF y datos a CSV/Excel.
 - Gratuito: sin App Store, sin servidor, sin suscripciones.
@@ -25,7 +26,7 @@ El objetivo es dar feedback objetivo a los porteros y apoyar decisiones de entre
 **No-objetivos (fuera de esta versión)**
 - xG / PSxG / "goles evitados" por modelo (no fiable sin modelo entrenado; se sustituye por la valoración experta "¿evitable?").
 - Sincronización en la nube o varios usuarios/dispositivos.
-- Exportar clips de vídeo.
+- Cargar o reproducir vídeo en la app, enlazar acciones al vídeo, exportar clips.
 - Tracking automático o detección de eventos.
 
 **Anti-objetivos (sería un fracaso aunque "funcione")**
