@@ -10,8 +10,9 @@ export const s = (tag, attrs = {}, ...kids) => {
 };
 export const toSvg = p => ({ x: p.x * W, y: (1 - p.y) * L });
 
-export function pitchSVG({ onTap } = {}) {
-  const svg = s('svg', { viewBox: '-3 -3 74 111', class: 'pitch', role: onTap ? 'button' : 'img', 'aria-label': 'Campo' });
+// half: true muestra solo la mitad propia (mapas de tiros).
+export function pitchSVG({ onTap, half } = {}) {
+  const svg = s('svg', { viewBox: half ? '-3 49 74 59' : '-3 -3 74 111', class: 'pitch', role: onTap ? 'button' : 'img', 'aria-label': 'Campo' });
   for (let i = 0; i < 10; i++) svg.append(s('rect', { x: 0, y: i * L / 10, width: W, height: L / 10, fill: i % 2 ? '#1f7a3a' : '#23873f' }));
   const line = { fill: 'none', stroke: 'rgba(255,255,255,.85)', 'stroke-width': .35 };
   svg.append(

@@ -39,3 +39,19 @@ export const sampleData = () => ({
     keepers: [{ keeperId: 'k1', minutes: 90 }], lineup: ['p4', 'p8'], clock: { half: 1, running: false, startedAt: null, accumulated: 0 }, finished: false }],
   actions: [],
 });
+
+// Mismas acciones que tests/logic.test.js (fixture).
+export const fixtureActions = (matchId = 'm1', keeperId = 'k1') => {
+  const A = (i, type, attrs, points) => ({ id: `${matchId}-a${i}`, matchId, keeperId, half: i < 5 ? 1 : 2, t: i * 60, type, attrs, points, note: i === 0 ? 'mala colocación' : '', createdAt: i });
+  return [
+    A(0, 'tiro', { resultado: 'gol', evitable: 'si' }, { origen: { x: .5, y: .12 }, porteria: 0 }),
+    A(1, 'tiro', { resultado: 'blocaje' }, { origen: { x: .4, y: .2 }, porteria: 4 }),
+    A(2, 'tiro', { resultado: 'fuera_poste' }, { origen: { x: .65, y: .3 }, porteria: 2 }),
+    A(3, 'penalti', { resultado: 'gol', lado_portero: 'izq' }, { lanzamiento: 5 }),
+    A(4, 'centro', { decision: 'sale', resultado: 'exito', valoracion: 'correcta' }, { origen: { x: .95, y: .15 } }),
+    A(5, 'centro', { decision: 'se_queda', resultado: 'fallo', valoracion: 'debia_salir' }, { origen: { x: .05, y: .2 } }),
+    A(6, 'pase', { resultado: 'completado', altura: 'raso' }, { origen: { x: .5, y: .05 }, destino: { x: .3, y: .5 } }),
+    A(7, 'pase', { resultado: 'perdido', altura: 'alto' }, { origen: { x: .5, y: .05 }, destino: { x: .6, y: .8 } }),
+    A(8, 'saque_puerta', { resultado: 'segunda_ganada' }, { origen: { x: .5, y: .05 }, destino: { x: .7, y: .2 } }),
+  ];
+};

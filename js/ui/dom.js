@@ -3,7 +3,7 @@ export function h(sel, props, ...kids) {
   const [tag, ...cls] = sel.split('.');
   const el = document.createElement(tag || 'div');
   if (cls.length) el.className = cls.join(' ');
-  if (props && (typeof props !== 'object' || props instanceof Node || Array.isArray(props))) { kids.unshift(props); props = null; }
+  if (typeof props !== 'object' || props === null || props instanceof Node || Array.isArray(props)) { if (props != null) kids.unshift(props); props = null; }
   for (const [k, v] of Object.entries(props || {})) {
     if (v == null || v === false) continue;
     if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
