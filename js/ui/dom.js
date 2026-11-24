@@ -7,7 +7,7 @@ export function h(sel, props, ...kids) {
   for (const [k, v] of Object.entries(props || {})) {
     if (v == null || v === false) continue;
     if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
-    else if (k === 'style' || k.startsWith('data') || k.startsWith('aria') || k === 'for') el.setAttribute(k, v);
+    else if (k === 'style' || k === 'class' || k.startsWith('data') || k.startsWith('aria') || k === 'for') el.setAttribute(k, v);
     else el[k] = v;
   }
   el.append(...kids.flat(Infinity).filter(k => k != null && k !== false));

@@ -115,3 +115,18 @@ table.t th { color: var(--muted); font-weight: 500; }
 .scorebox .score { font-size: 20px; padding: 0 6px; }
 .reg-head .btn.small { min-height: 40px; padding: 4px 10px; }
 .adj .btn.small { padding: 4px 8px; }
+
+/* Gráfico de evolución (paleta validada: modo oscuro y claro/impresión) */
+:root { --s1: #3987e5; --s2: #d95926; --s3: #199e70; }
+.evo { margin: 0 0 12px; } .evo-chart { width: 100%; max-height: 260px; }
+.evo-chart .grid { stroke: var(--line); stroke-width: 1; }
+.evo-chart .axis { fill: var(--muted); font-size: 11px; }
+.evo-chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.evo-chart .pt { stroke: var(--panel); stroke-width: 2; }
+.evo-chart .pt.hollow { fill: var(--panel) !important; stroke-width: 2.5; }
+.evo-chart .s1 { stroke: var(--s1); } .evo-chart .pt.s1 { fill: var(--s1); }
+.evo-chart .s2 { stroke: var(--s2); } .evo-chart .pt.s2 { fill: var(--s2); }
+.evo-chart .s3 { stroke: var(--s3); } .evo-chart .pt.s3 { fill: var(--s3); }
+.evo-chart .pt.hollow.s1 { stroke: var(--s1); } .evo-chart .pt.hollow.s2 { stroke: var(--s2); } .evo-chart .pt.hollow.s3 { stroke: var(--s3); }
+.legend i.s1 { background: var(--s1); } .legend i.s2 { background: var(--s2); } .legend i.s3 { background: var(--s3); }
+@media print { :root { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; } }

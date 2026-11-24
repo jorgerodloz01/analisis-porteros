@@ -42,7 +42,7 @@ export const sampleData = () => ({
 
 // Mismas acciones que tests/logic.test.js (fixture).
 export const fixtureActions = (matchId = 'm1', keeperId = 'k1') => {
-  const A = (i, type, attrs, points) => ({ id: `${matchId}-a${i}`, matchId, keeperId, half: i < 5 ? 1 : 2, t: i * 60, type, attrs, points, note: i === 0 ? 'mala colocación' : '', createdAt: i });
+  const A = (i, type, attrs, points) => ({ id: `${matchId}-${keeperId}-a${i}`, matchId, keeperId, half: i < 5 ? 1 : 2, t: i * 60, type, attrs, points, note: i === 0 ? 'mala colocación' : '', createdAt: i });
   return [
     A(0, 'tiro', { resultado: 'gol', evitable: 'si' }, { origen: { x: .5, y: .12 }, porteria: 0 }),
     A(1, 'tiro', { resultado: 'blocaje' }, { origen: { x: .4, y: .2 }, porteria: 4 }),
