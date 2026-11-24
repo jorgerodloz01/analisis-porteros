@@ -19,8 +19,10 @@ async function route() {
   for (const [re, fn] of routes) {
     const m = hash.match(re);
     if (m) {
-      el.replaceChildren();
-      try { await fn(el, ...m.slice(1)); } catch (e) { console.error(e); el.replaceChildren(h('p.error', 'Error: ' + e.message)); }
+      // Cada navegación pinta en su propio contenedor: un render lento anterior no puede duplicar la página.
+      const box = h('div');
+      el.replaceChildren(box);
+      try { await fn(box, ...m.slice(1)); } catch (e) { console.error(e); box.replaceChildren(h('p.error', 'Error: ' + e.message)); }
       break;
     }
   }

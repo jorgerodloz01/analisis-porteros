@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { destLine, minuteLabel, clockSeconds, pct, fmtPct, per90, matchStats, seasonStats, toCSV } from '../js/logic.js';
+import { destLine, minuteLabel, parseMinute, clockSeconds, pct, fmtPct, per90, matchStats, seasonStats, toCSV } from '../js/logic.js';
 
 const A = (type, attrs = {}, points = {}, extra = {}) => ({ id: Math.random() + '', matchId: 'm1', keeperId: 'k1', half: 1, t: 0, type, attrs, points, ...extra });
 
@@ -72,4 +72,18 @@ test('toCSV escapa y lleva BOM', () => {
 
 test('goles no evitables', () => {
   assert.equal(matchStats([A('tiro', { resultado: 'gol', evitable: 'no' })]).goalsNotAvoidable, 1);
+});
+
+test('minuteLabel con añadido', () => {
+  assert.equal(minuteLabel(1, 2700), "45+1'"); assert.equal(minuteLabel(1, 2830), "45+3'");
+  assert.equal(minuteLabel(2, 2699), "90'"); assert.equal(minuteLabel(2, 2700), "90+1'");
+});
+
+test('parseMinute', () => {
+  assert.deepEqual(parseMinute('12'), { half: 1, t: 660 });
+  assert.deepEqual(parseMinute('45+2'), { half: 1, t: 2760 });
+  assert.deepEqual(parseMinute('46'), { half: 2, t: 0 });
+  assert.deepEqual(parseMinute(" 90+3' "), { half: 2, t: 2820 });
+  for (const bad of ['', 'x', '0', '130', '30+1', '-5']) assert.equal(parseMinute(bad), null, bad);
+  for (const [h, t] of [[1, 0], [1, 2760], [2, 0], [2, 2820]]) assert.deepEqual(parseMinute(minuteLabel(h, t)), { half: h, t }, 'ida y vuelta');
 });

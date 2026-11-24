@@ -2,7 +2,21 @@
 
 export const destLine = y => (y < 1 / 3 ? 1 : y < 2 / 3 ? 2 : 3);
 
-export const minuteLabel = (half, t) => `${(half === 2 ? 45 : 0) + Math.floor(t / 60) + 1}'`;
+export function minuteLabel(half, t) {
+  const base = half === 2 ? 45 : 0, m = Math.floor(t / 60) + 1;
+  return m > 45 ? `${base + 45}+${m - 45}'` : `${base + m}'`; // añadido: 45+1', 90+2'
+}
+
+// "12", "45+2", "67", "90+3'" -> {half, t}; null si no es un minuto válido.
+export function parseMinute(str) {
+  const m = String(str).trim().replace(/[’′']$/, '').match(/^(\d{1,3})(?:\+(\d{1,2}))?$/);
+  if (!m) return null;
+  const n = +m[1], extra = m[2] == null ? null : +m[2];
+  if (extra != null) return (n === 45 || n === 90) && extra >= 1 ? { half: n === 45 ? 1 : 2, t: (44 + extra) * 60 } : null;
+  if (n >= 1 && n <= 45) return { half: 1, t: (n - 1) * 60 };
+  if (n >= 46 && n <= 90) return { half: 2, t: (n - 46) * 60 };
+  return null;
+}
 
 export const clockSeconds = (c, nowMs) =>
   c.accumulated + (c.running && c.startedAt ? (nowMs - c.startedAt) / 1000 : 0);

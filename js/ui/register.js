@@ -1,7 +1,7 @@
 import * as db from '../db.js';
 import { h, uid } from './dom.js';
-import { TABS, TYPES, visibleSteps, stepValue, missingRequired } from '../catalog.js';
-import { clockSeconds, minuteLabel } from '../logic.js';
+import { TABS, TYPES, visibleSteps, stepValue, missingRequired, cleanAction } from '../catalog.js';
+import { clockSeconds, minuteLabel, parseMinute } from '../logic.js';
 import { pitchSVG, goalSVG, drawMarkers } from './pitch.js';
 import { avatar } from './setup.js';
 import { exportBackup } from '../backup.js';
@@ -55,7 +55,7 @@ export async function renderRegister(el, matchId) {
     Object.assign(c, { half: n, running: false, startedAt: null, accumulated: 0 });
     saveMatch(); paintHead(); tick();
   }
-  const timer = setInterval(() => { if (!el.isConnected) clearInterval(timer); else tick(); }, 250);
+  const timer = setInterval(() => { if (!clockEl.isConnected) clearInterval(timer); else tick(); }, 250);
 
   const head = h('div.reg-head',
     h('a.btn.small', { href: '#/' }, '← Partidos'),
@@ -86,7 +86,7 @@ export async function renderRegister(el, matchId) {
   function paintTabs() {
     tabsEl.replaceChildren(...TABS.map(t => h('button' + (t.key === st.tab ? '.on' : ''), { onclick: () => { st.tab = t.key; paintTabs(); } }, h('strong', t.label), h('small', t.sub))));
     typesEl.replaceChildren(...TABS.find(t => t.key === st.tab).types.map(k =>
-      h('button' + (st.draft?.type === k ? '.on' : ''), { onclick: () => newDraft(k) }, TYPES[k].label)));
+      h('button' + (st.draft?.type === k ? '.on' : ''), { onclick: () => discardOk() && newDraft(k) }, TYPES[k].label)));
   }
 
   function paintKeepers() {
@@ -161,21 +161,19 @@ export async function renderRegister(el, matchId) {
 
   function editTime() {
     const d = st.draft;
-    const half = prompt('Parte (1 o 2)', String(d.half));
-    if (half == null) return;
-    const hNum = half.trim() === '2' ? 2 : 1;
-    const m = prompt(`Minuto de partido (${hNum === 1 ? '1-45+' : '46-90+'})`, minuteLabel(d.half, d.t).replace("'", ''));
-    if (m == null || !Number.isFinite(+m)) return;
-    d.half = hNum;
-    d.t = Math.max(0, (Math.round(+m) - 1 - (hNum === 2 ? 45 : 0)) * 60);
-    paintAll();
+    let v = prompt('Minuto de partido (ej. 12, 45+2, 67, 90+3)', minuteLabel(d.half, d.t).replace("'", ''));
+    while (v != null) {
+      const p = parseMinute(v);
+      if (p) { Object.assign(d, p); paintAll(); return; }
+      v = prompt('Minuto no válido. Usa 1-45, 45+N, 46-90 o 90+N:', v);
+    }
   }
 
   async function save() {
     const d = st.draft;
     const isNew = !d.id;
     const prev = isNew ? null : st.actions.find(a => a.id === d.id);
-    const action = { ...d, id: d.id || uid(), createdAt: prev?.createdAt || Date.now() };
+    const action = cleanAction({ ...d, id: d.id || uid(), createdAt: prev?.createdAt || Date.now() });
     try { await db.put('actions', action); } catch (e) { fail('guardar la acción (sigue en pantalla, pulsa Guardar otra vez)', e); return; }
     st.actions = st.actions.filter(a => a.id !== action.id).concat(action);
     // marcador: goles en contra siguen a las acciones de gol
@@ -204,19 +202,32 @@ export async function renderRegister(el, matchId) {
     const kName = id => keepers.find(k => k.id === id)?.name.split(' ')[0] || '';
     const sorted = [...st.actions].sort((a, b) => b.half - a.half || b.t - a.t || b.createdAt - a.createdAt);
     logEl.replaceChildren(...sorted.map(a => h('li' + (st.draft?.id === a.id ? '.editing' : ''), {
-      onclick: e => { if (e.target.closest('button')) return; st.draft = structuredClone(a); st.step = 0; st.tab = TABS.find(t => t.types.includes(a.type)).key; paintAll(); },
+      onclick: e => { if (e.target.closest('button') || !discardOk()) return; st.draft = structuredClone(a); st.step = 0; st.tab = TABS.find(t => t.types.includes(a.type)).key; paintAll(); },
     }, h('span', h('b', minuteLabel(a.half, a.t)), ' ', TYPES[a.type].label, ' · ', res(a), keepers.length > 1 ? h('span.muted', ` · ${kName(a.keeperId)}`) : null, a.note ? ' 📝' : ''),
       h('button.btn.small.danger', { 'aria-label': 'Borrar acción', onclick: () => remove(a) }, '✕'))));
     countEl.textContent = `Registro · ${st.actions.length}`;
+    undoBtn.disabled = !st.actions.length;
   }
   const countEl = h('h2');
+  const undoBtn = h('button.btn.small', { onclick: () => {
+    const last = st.actions.reduce((a, b) => (!a || b.createdAt > a.createdAt ? b : a), null);
+    if (last) remove(last);
+  } }, '↶ Deshacer última');
+  // Hay algo sin guardar: acción nueva con datos, o edición distinta de lo guardado.
+  function discardOk() {
+    const d = st.draft;
+    if (!d) return true;
+    const dirty = d.id ? JSON.stringify(d) !== JSON.stringify(st.actions.find(a => a.id === d.id))
+      : Object.keys(d.points).length + Object.keys(d.attrs).length > 0;
+    return !dirty || confirm('Hay una acción sin guardar. ¿Descartarla?');
+  }
 
   function paintAll() { paintHead(); paintTabs(); paintKeepers(); paintStage(); paintSteps(); paintLog(); }
 
   el.append(h('div.reg', head, tabsEl,
     h('div.reg-body', typesEl,
       h('div.stage', stageTitle, stageMain),
-      h('div.side', h('div.card', h('h2', 'Portero'), keeperEl), h('div.card.log-card', { style: 'flex:1;display:flex;flex-direction:column;min-height:0' }, countEl, logEl))),
+      h('div.side', h('div.card', h('h2', 'Portero'), keeperEl), h('div.card.log-card', { style: 'flex:1;display:flex;flex-direction:column;min-height:0' }, h('div.row', { style: 'justify-content:space-between' }, countEl, undoBtn), logEl))),
     stepsEl));
   paintAll(); tick();
 }

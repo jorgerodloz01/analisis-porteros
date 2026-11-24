@@ -34,6 +34,7 @@ export async function renderSetup(el) {
   // --- Porteros
   const keeperForm = (k = { id: uid(), name: '', number: '', photo: null, active: true }) => {
     let photo = k.photo;
+    const fmsg = h('p.msg', { role: 'status' });
     const preview = h('div.preview', avatar(k, 'avatar.big'));
     const name = h('input', { value: k.name, placeholder: 'Nombre', required: true, name: 'kname' });
     const number = h('input', { value: k.number, placeholder: 'Dorsal', inputMode: 'numeric', size: 4, name: 'knumber' });
@@ -41,14 +42,14 @@ export async function renderSetup(el) {
       try {
         photo = await resizeImage(file.files[0]);
         preview.replaceChildren(h('img.avatar.big', { src: photo, alt: '' }));
-        msg.textContent = '';
-      } catch { msg.textContent = 'No se pudo leer la imagen (prueba con JPG/PNG).'; file.value = ''; }
+        fmsg.textContent = '';
+      } catch { fmsg.textContent = 'No se pudo leer la imagen (prueba con JPG/PNG).'; file.value = ''; }
     } });
     return h('form.keeper-form', { onsubmit: async e => {
       e.preventDefault();
       await db.put('keepers', { ...k, name: name.value.trim(), number: number.value.trim(), photo });
       rerender();
-    } }, preview, h('label.file', 'Foto', file), name, number, h('button.btn', k.name ? 'Guardar' : 'Añadir portero'));
+    } }, preview, h('label.file', 'Foto', file), name, number, h('button.btn', k.name ? 'Guardar' : 'Añadir portero'), fmsg);
   };
   const keepersBox = h('section.card',
     h('h2', 'Porteros'),
@@ -60,7 +61,7 @@ export async function renderSetup(el) {
     h('h3', 'Nuevo portero'), keeperForm());
 
   // --- Plantilla
-  const pNum = h('input', { placeholder: 'Dorsal', inputMode: 'numeric', size: 4, required: true });
+  const pNum = h('input', { type: 'number', min: 1, max: 99, placeholder: 'Dorsal', style: 'width:100px', required: true });
   const pName = h('input', { placeholder: 'Nombre' });
   const playersBox = h('section.card',
     h('h2', 'Plantilla (receptores de pase)'),

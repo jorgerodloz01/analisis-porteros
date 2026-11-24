@@ -105,3 +105,11 @@ export const missingRequired = (type, action) =>
 
 // Todas las claves de atributos (para columnas CSV).
 export const ATTR_KEYS = [...new Set(Object.values(TYPES).flatMap(t => t.steps.filter(s => s.kind === 'choice' || s.kind === 'receptor').map(s => s.key)))];
+
+// Quita lo registrado en pasos que una respuesta posterior ha ocultado (p. ej. «evitable» si ya no es gol).
+export function cleanAction(action) {
+  const visible = new Set(visibleSteps(action.type, action).map(s => s.key));
+  const points = { ...action.points }, attrs = { ...action.attrs };
+  for (const s of TYPES[action.type].steps) if (!visible.has(s.key)) { delete points[s.key]; delete attrs[s.key]; }
+  return { ...action, points, attrs };
+}

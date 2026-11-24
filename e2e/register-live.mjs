@@ -55,6 +55,39 @@ assert.equal(await page.locator(".log li:has-text(\"1'\")").count(), 2);
 
 await page.screenshot({ path: 'e2e/shots/register.png' });
 
+// minuto con añadido, confirmación al descartar y limpieza de pasos ocultos
+const answers = []; let prompts = 0;
+page.removeAllListeners('dialog');
+page.on('dialog', d => { answers.push(d.message()); d.accept(d.type() === 'prompt' ? (++prompts === 1 ? '30+1' : '45+2') : undefined); });
+await page.click('.reg-tabs button:has-text("Defensa")');
+await page.click('.types button:has-text("Tiro")');
+await tapPitch(0.5, 0.15);
+await page.click('.types button:has-text("Centro lateral")');
+assert.equal(answers.length, 1, 'pide confirmar descarte');
+await page.click('.types button:has-text("Tiro")');
+assert.equal(answers.length, 1, 'sin datos no pregunta');
+await page.click('.steps button:has-text("⏱")');
+assert.ok(await page.locator(".stage-title:has-text(\"45+2'\")").count(), 'minuto 45+2 tras reintento');
+assert.ok(answers[2].includes('no válido'), 'reintento al minuto inválido');
+await tapPitch(0.5, 0.15);
+await page.click('.steps button:has-text("Zona de portería")');
+await page.click('.stage svg.goal [data-cell="4"]');
+await page.click('.steps button:has-text("Resultado")');
+await page.click('.options button:has-text("Gol")');
+await page.click('.options button:has-text("Sí")');
+await page.click('.steps button:has-text("Resultado")');
+await page.click('.options button:has-text("Blocaje")');
+await page.click('button:has-text("Guardar")');
+await page.waitForFunction(() => document.querySelectorAll('.log li').length === 3);
+const saved = await page.evaluate(async () => (await (await import('./js/db.js')).all('actions')).find(a => a.attrs.resultado === 'blocaje'));
+assert.equal(saved.attrs.evitable, undefined, 'evitable eliminado al no ser gol');
+assert.equal(saved.half, 1); assert.equal(saved.t, 2760);
+assert.ok(await page.locator(".log li:has-text(\"45+2'\")").count());
+
+// deshacer última
+await page.click('button:has-text("Deshacer última")');
+await page.waitForFunction(() => document.querySelectorAll('.log li').length === 2);
+
 // borrar
 await page.locator('.log li').first().locator('button:has-text("✕")').click();
 await page.waitForFunction(() => document.querySelectorAll('.log li').length === 1);

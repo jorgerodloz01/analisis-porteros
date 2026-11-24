@@ -24,12 +24,15 @@ App web para iPad que registra las acciones de tus porteros durante un partido, 
    - **Iniciar** arranca el cronómetro. Cambia de parte con los botones **1.ª parte / 2.ª parte**. Los botones ±10″ y ±1′ sirven para cuadrar el reloj con el partido o con el vídeo en diferido; puedes pausarlo cuando pauses el vídeo.
    - Elige la pestaña (Defensa / Distribución / ABP) y el tipo de acción. Toca en el campo o la portería y elige las opciones. Cada toque avanza al siguiente paso.
    - Los pasos con ★ son obligatorios y el resto puedes saltarlos. Pulsa **Guardar**.
-   - El minuto se toma al elegir la acción. Puedes corregirlo con el botón ⏱.
+   - El minuto se toma al elegir la acción. Puedes corregirlo con el botón ⏱ (admite añadido: `45+2`, `90+3`).
+   - **↶ Deshacer última** borra la última acción guardada. Si cambias de acción con datos sin guardar, la app te pregunta antes de descartarlos.
    - La portería y el lado del penalti se registran **vistos desde el campo**, como en la imagen de la TV.
    - Para editar una acción, tócala en el registro de la derecha. Para borrarla, pulsa ✕.
    - Al guardar un gol, el marcador en contra se actualiza solo. Los goles a favor se suman con +.
 4. **Informe**: muestra las estadísticas, los mapas y la lista de acciones con su minuto. **PDF** abre la impresión de Safari, desde donde puedes «Guardar en Archivos» o compartirlo. **CSV** descarga los datos para Excel.
 5. **Temporada**: muestra el acumulado por portero (totales, métricas por 90 minutos y evolución partido a partido) y la comparación entre porteros, con filtros por competición y condición.
+
+**Antes de empezar la temporada**, revisa y ajusta los **[criterios operativos de registro](docs/criterios-operativos.md)**: qué cuenta como gol evitable, presión alta, rechace peligroso, etc. Fijarlos de antemano es lo que hace comparables los datos de todos los partidos.
 
 ## 4. Copias de seguridad (importante)
 
