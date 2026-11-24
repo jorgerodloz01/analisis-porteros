@@ -77,7 +77,7 @@ export const TYPES = {
     label: 'Penalti',
     steps: [
       goal('lanzamiento', 'Zona del lanzamiento', true),
-      choice('lado_portero', 'Lado al que se tira el portero', o(['izq', 'Izquierda'], ['centro', 'Centro'], ['der', 'Derecha'])),
+      choice('lado_portero', 'Lado al que se tira el portero (visto desde el campo)', o(['izq', 'Izquierda'], ['centro', 'Centro'], ['der', 'Derecha'])),
       choice('resultado', 'Resultado', o(['gol', 'Gol'], ['parada', 'Parada'], ['fuera_poste', 'Fuera / poste']), true),
     ],
   },

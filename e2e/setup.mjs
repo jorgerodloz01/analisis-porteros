@@ -29,5 +29,37 @@ assert.equal(await page.locator('.keeper').count(), 1);
 await page.locator('form.keeper-form').last().locator('input[name=kphoto]').setInputFiles({ name: 'x.heic', mimeType: 'image/heic', buffer: Buffer.from('nope') });
 await page.waitForSelector('.msg:has-text("No se pudo leer la imagen")');
 
+// replaceAll es atómico aunque un registro no tenga id
+const r = await page.evaluate(async () => {
+  const db = await import('./js/db.js');
+  let threw = false;
+  try { await db.replaceAll({ seasons: [], keepers: [{ name: 'sin id' }], players: [], matches: [], actions: [] }); } catch { threw = true; }
+  return { threw, keepers: (await db.all('keepers')).length };
+});
+assert.deepEqual(r, { threw: true, keepers: 1 }, 'datos intactos tras replaceAll fallido');
+
+// la conexión cerrada se reabre sola
+const reopened = await page.evaluate(async () => {
+  const db = await import('./js/db.js');
+  (await db.open()).close();
+  await db.setMeta('ping', 1);
+  return db.getMeta('ping');
+});
+assert.equal(reopened, 1, 'reconexión IndexedDB');
+
+// copia vía Compartir: solo se marca hecha si el usuario la guarda
+const marks = await page.evaluate(async () => {
+  const db = await import('./js/db.js'); const b = await import('./js/backup.js');
+  await db.setMeta('lastBackup', null);
+  navigator.canShare = () => true;
+  navigator.share = () => Promise.reject(new DOMException('cancel', 'AbortError'));
+  await b.exportBackup();
+  const afterCancel = await db.getMeta('lastBackup');
+  navigator.share = () => Promise.resolve();
+  await b.exportBackup();
+  return { afterCancel, afterShare: !!(await db.getMeta('lastBackup')) };
+});
+assert.deepEqual(marks, { afterCancel: null, afterShare: true }, 'lastBackup solo tras compartir');
+
 await page.screenshot({ path: 'e2e/shots/setup.png' });
 await done();

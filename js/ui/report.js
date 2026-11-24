@@ -44,7 +44,7 @@ export function statsBlock(stats, actions) {
       h('h2', 'Portería'),
       h('div.kpis',
         kpi(stats.shots, 'Tiros recibidos'), kpi(stats.onTarget, 'A puerta'), kpi(fmtPct(stats.savePct), 'Paradas / a puerta'),
-        kpi(stats.goals, `Goles encajados (incl. penaltis)`), kpi(stats.goalsAvoidable, 'Goles evitables'), kpi(stats.goalsDebatable, 'Goles discutibles'))),
+        kpi(stats.goals, `Goles encajados (incl. penaltis)`), kpi(stats.goalsAvoidable, 'Goles evitables'), kpi(stats.goalsNotAvoidable, 'Goles no evitables'), kpi(stats.goalsDebatable, 'Goles discutibles'))),
     h('section.card',
       h('h2', 'Mapas'),
       h('div.maps',

@@ -72,7 +72,8 @@ export async function renderSetup(el) {
 
   // --- Copias
   const imp = h('input', { type: 'file', accept: 'application/json,.json', name: 'import', onchange: async () => {
-    const err = await importBackup(imp.files[0]);
+    let err;
+    try { err = await importBackup(imp.files[0]); } catch (e) { err = 'No se pudo importar: ' + e.message; }
     imp.value = '';
     if (err === 'cancel') return;
     if (err) msg.textContent = err; else { await db.setMeta('activeSeason', null); rerender(); }

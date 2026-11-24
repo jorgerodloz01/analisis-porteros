@@ -56,6 +56,7 @@ export function matchStats(actions) {
     goals: goalsAll.length,
     goalsAvoidable: count(goalsAll, a => a.attrs.evitable === 'si'),
     goalsDebatable: count(goalsAll, a => a.attrs.evitable === 'discutible'),
+    goalsNotAvoidable: count(goalsAll, a => a.attrs.evitable === 'no'),
     crosses: aerialStats(of('centro')),
     aerial: aerialStats(of('aereo')),
     oneVone: {

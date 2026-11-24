@@ -28,6 +28,7 @@ export async function start() {
 // Siembra datos vía la propia app (replaceAll) y recarga.
 export async function seed(page, data) {
   await page.goto(BASE + '#/setup');
+  await page.waitForSelector('h2:has-text("Temporadas")'); // la página ya creó su temporada por defecto
   await page.evaluate(async d => { const db = await import('./js/db.js'); await db.replaceAll(d); await db.setMeta('activeSeason', d.seasons[0]?.id); await db.setMeta('lastBackup', Date.now()); }, data);
 }
 

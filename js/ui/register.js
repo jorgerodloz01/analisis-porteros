@@ -24,7 +24,8 @@ export async function renderRegister(el, matchId) {
     step: 0,
   };
 
-  const saveMatch = () => db.put('matches', match);
+  const fail = (what, e) => alert(`No se pudo ${what}. Lo ya guardado no se pierde; si se repite, cierra y vuelve a abrir la app.\n(${e.message})`);
+  const saveMatch = () => db.put('matches', match).catch(e => fail('guardar el reloj/marcador', e));
   const now = () => clockSeconds(match.clock, Date.now());
 
   // ---------- Cabecera
@@ -175,7 +176,7 @@ export async function renderRegister(el, matchId) {
     const isNew = !d.id;
     const prev = isNew ? null : st.actions.find(a => a.id === d.id);
     const action = { ...d, id: d.id || uid(), createdAt: prev?.createdAt || Date.now() };
-    await db.put('actions', action);
+    try { await db.put('actions', action); } catch (e) { fail('guardar la acción (sigue en pantalla, pulsa Guardar otra vez)', e); return; }
     st.actions = st.actions.filter(a => a.id !== action.id).concat(action);
     // marcador: goles en contra siguen a las acciones de gol
     const delta = (isGoal(action) ? 1 : 0) - (prev && isGoal(prev) ? 1 : 0);
@@ -188,7 +189,7 @@ export async function renderRegister(el, matchId) {
 
   async function remove(a) {
     if (!confirm(`¿Borrar ${TYPES[a.type].label} (${minuteLabel(a.half, a.t)})?`)) return;
-    await db.del('actions', a.id);
+    try { await db.del('actions', a.id); } catch (e) { fail('borrar la acción', e); return; }
     st.actions = st.actions.filter(x => x.id !== a.id);
     if (isGoal(a)) { match.goalsAgainst = Math.max(0, match.goalsAgainst - 1); await saveMatch(); }
     if (st.draft?.id === a.id) st.draft = null;

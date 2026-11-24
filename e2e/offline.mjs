@@ -7,6 +7,12 @@ await page.reload();                       // la página ya bajo control del SW
 await page.waitForFunction(() => navigator.serviceWorker.controller);
 // visitar todas las pantallas para que sus módulos queden en caché
 for (const r of ['#/season', '#/setup', '#/match/m1/report', '#/match/m1/register', '#/']) { await page.goto(BASE + r); await page.waitForTimeout(300); }
+const cached = await page.evaluate(async () => {
+  const keys = await caches.keys();
+  const files = await (await caches.open(keys[0])).keys();
+  return { keys, n: files.length };
+});
+assert.equal(cached.keys.length, 1); assert.match(cached.keys[0], /^porteros-\d/); assert.ok(cached.n >= 18, 'precache completo ' + cached.n);
 await context.setOffline(true);
 await page.reload();
 await page.waitForSelector('.match-row:has-text("CD Rival")');

@@ -35,13 +35,13 @@ App web para iPad que registra las acciones de tus porteros durante un partido, 
 
 Los datos viven **solo en este iPad**, en el almacenamiento de Safari. Si borras los datos de Safari, desinstalas la app o pierdes el iPad, se pierden.
 
-- Al **Finalizar** un partido, la app te propone exportar una copia. Guárdala en Archivos o iCloud Drive.
+- Al **Finalizar** un partido, la app te propone exportar una copia. Se abre «Compartir»: elige **Guardar en Archivos** (mejor en iCloud Drive). La copia solo se da por hecha si la guardas.
 - En **Configuración → Copia de seguridad** puedes exportar o importar cuando quieras. Al importar se **sustituyen** todos los datos actuales.
 - Si pasan más de 7 días sin copia, aparece un aviso.
 
 ## 5. Actualizaciones
 
-Cuando subas una versión nueva al repositorio, el iPad la descarga en segundo plano y la usa **a partir de la siguiente vez** que abras la app.
+Cada vez que publiques cambios en el código, **sube el número `VERSION` de `sw.js`** (por ejemplo, de `1.1.0` a `1.1.1`). El iPad descarga la versión nueva completa en segundo plano y la usa **a partir de la siguiente vez** que abras la app. Si no cambias `VERSION`, el iPad seguirá usando la versión anterior.
 
 ## Notas sobre las métricas
 

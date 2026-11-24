@@ -11,13 +11,25 @@ export function open() {
         if (s === 'actions') st.createIndex('matchId', 'matchId');
       }
     };
-    r.onsuccess = () => { navigator.storage?.persist?.(); res(r.result); };
-    r.onerror = () => rej(r.error);
+    r.onsuccess = () => {
+      const db = r.result;
+      // iOS puede cortar la conexión al volver de segundo plano: la próxima operación reabre.
+      db.onclose = db.onversionchange = () => { db.close(); dbp = null; };
+      navigator.storage?.persist?.();
+      res(db);
+    };
+    r.onerror = () => { dbp = null; rej(r.error); };
   }));
 }
 
+async function tx(names, mode) {
+  try { return (await open()).transaction(names, mode); }
+  catch (e) { if (e.name !== 'InvalidStateError') throw e; dbp = null; return (await open()).transaction(names, mode); }
+}
+
+const done = t => new Promise((res, rej) => { t.oncomplete = res; t.onerror = t.onabort = () => rej(t.error || new Error('Transacción abortada')); });
 const req = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
-const store = async (name, mode = 'readonly') => (await open()).transaction(name, mode).objectStore(name);
+const store = async (name, mode = 'readonly') => (await tx(name, mode)).objectStore(name);
 
 export const all = async s => req((await store(s)).getAll());
 export const get = async (s, id) => req((await store(s)).get(id));
@@ -28,23 +40,26 @@ export const getMeta = async key => (await get('meta', key))?.value;
 export const setMeta = (key, value) => put('meta', { key, value });
 
 export async function deleteMatch(id) {
-  const tx = (await open()).transaction(['matches', 'actions'], 'readwrite');
-  tx.objectStore('matches').delete(id);
-  const acts = await req(tx.objectStore('actions').index('matchId').getAllKeys(id));
-  acts.forEach(k => tx.objectStore('actions').delete(k));
-  return new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+  const t = await tx(['matches', 'actions'], 'readwrite');
+  t.objectStore('matches').delete(id);
+  const acts = await req(t.objectStore('actions').index('matchId').getAllKeys(id));
+  acts.forEach(k => t.objectStore('actions').delete(k));
+  return done(t);
 }
 
 // Sustituye todos los datos en una sola transacción: si algo falla, no se toca nada.
 export async function replaceAll(data) {
   const names = STORES.filter(s => s !== 'meta');
-  const tx = (await open()).transaction(names, 'readwrite');
-  for (const s of names) {
-    const st = tx.objectStore(s);
-    st.clear();
-    for (const o of data[s] || []) st.put(o);
-  }
-  return new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error); });
+  const t = await tx(names, 'readwrite');
+  const finished = done(t);
+  try {
+    for (const s of names) {
+      const st = t.objectStore(s);
+      st.clear();
+      for (const o of data[s] || []) st.put(o);
+    }
+  } catch (e) { t.abort(); finished.catch(() => {}); throw e; } // un put síncrono que lanza no aborta solo
+  return finished;
 }
 
 export async function dumpAll() {

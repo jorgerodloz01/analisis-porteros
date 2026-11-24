@@ -39,6 +39,7 @@ test('matchStats con fixture', () => {
   const s = matchStats(fixture);
   assert.equal(s.shots, 3); assert.equal(s.onTarget, 2); assert.equal(s.saves, 1);
   assert.equal(s.savePct.value, 0.5); assert.equal(s.goals, 2); assert.equal(s.goalsAvoidable, 1);
+  assert.equal(s.goalsNotAvoidable, 0); // penalti gol sin valorar no cuenta como no evitable
   assert.equal(s.crosses.n, 2); assert.equal(s.crosses.intervention.value, 0.5);
   assert.equal(s.crosses.success.value, 1); assert.equal(s.crosses.correctDecision.value, 0.5);
   assert.equal(s.dist.total.value, 2 / 3);
@@ -67,4 +68,8 @@ test('seasonStats suma minutos y filtra portero', () => {
 
 test('toCSV escapa y lleva BOM', () => {
   assert.equal(toCSV([{ a: 'x;y', b: '"q"' }], ['a', 'b']), '﻿a;b\n"x;y";"""q"""\n');
+});
+
+test('goles no evitables', () => {
+  assert.equal(matchStats([A('tiro', { resultado: 'gol', evitable: 'no' })]).goalsNotAvoidable, 1);
 });

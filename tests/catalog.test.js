@@ -30,3 +30,8 @@ test('barrera oculta en córner', () => {
   assert.ok(!keys({ subtipo: 'corner' }).includes('barrera'));
   assert.ok(keys({ subtipo: 'falta_frontal' }).includes('barrera'));
 });
+
+test('lado del portero en penalti indica la referencia visual', () => {
+  const step = TYPES.penalti.steps.find(s => s.key === 'lado_portero');
+  assert.match(step.label, /vist[oa] desde el campo/i);
+});
