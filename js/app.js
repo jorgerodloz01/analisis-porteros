@@ -15,7 +15,7 @@ async function route() {
   const el = document.getElementById('app');
   const hash = location.hash || '#/';
   document.querySelectorAll('.topbar nav a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === hash));
-  document.body.dataset.route = hash.split('/')[1] || 'home';
+  document.body.dataset.route = hash.endsWith('/register') ? 'match' : hash.split('/')[1] || 'home';
   for (const [re, fn] of routes) {
     const m = hash.match(re);
     if (m) {

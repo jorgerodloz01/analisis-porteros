@@ -1,0 +1,74 @@
+// Campo vertical (portería propia abajo) y portería 3×3 en SVG.
+// Coordenadas normalizadas: x 0→1 izquierda→derecha, y 0 (línea de gol propia) → 1 (rival).
+const NS = 'http://www.w3.org/2000/svg';
+const W = 68, L = 105;
+export const s = (tag, attrs = {}, ...kids) => {
+  const el = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) if (v != null) el.setAttribute(k, v);
+  el.append(...kids);
+  return el;
+};
+export const toSvg = p => ({ x: p.x * W, y: (1 - p.y) * L });
+
+export function pitchSVG({ onTap } = {}) {
+  const svg = s('svg', { viewBox: '-3 -3 74 111', class: 'pitch', role: onTap ? 'button' : 'img', 'aria-label': 'Campo' });
+  for (let i = 0; i < 10; i++) svg.append(s('rect', { x: 0, y: i * L / 10, width: W, height: L / 10, fill: i % 2 ? '#1f7a3a' : '#23873f' }));
+  const line = { fill: 'none', stroke: 'rgba(255,255,255,.85)', 'stroke-width': .35 };
+  svg.append(
+    s('rect', { x: 0, y: 0, width: W, height: L, ...line }),
+    s('line', { x1: 0, y1: L / 2, x2: W, y2: L / 2, ...line }),
+    s('circle', { cx: W / 2, cy: L / 2, r: 9.15, ...line }),
+    ...[0, L].flatMap(gy => {
+      const d = gy ? -1 : 1;
+      return [
+        s('rect', { x: W / 2 - 20.16, y: gy ? L - 16.5 : 0, width: 40.32, height: 16.5, ...line }),
+        s('rect', { x: W / 2 - 9.16, y: gy ? L - 5.5 : 0, width: 18.32, height: 5.5, ...line }),
+        s('rect', { x: W / 2 - 3.66, y: gy ? L : -2, width: 7.32, height: 2, ...line, fill: 'rgba(255,255,255,.3)' }),
+        s('circle', { cx: W / 2, cy: gy + d * 11, r: .5, fill: '#fff' }),
+      ];
+    }),
+    // tercios (líneas de distribución)
+    ...[1, 2].map(k => s('line', { x1: 0, x2: W, y1: L - (k * L) / 3, y2: L - (k * L) / 3, stroke: 'rgba(255,255,255,.35)', 'stroke-width': .3, 'stroke-dasharray': '1.5 1.5' })),
+  );
+  svg.append(s('g', { class: 'marks' }));
+  if (onTap) svg.addEventListener('click', e => {
+    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+    const clamp = v => Math.min(1, Math.max(0, v));
+    onTap({ x: +clamp(pt.x / W).toFixed(4), y: +clamp(1 - pt.y / L).toFixed(4) });
+  });
+  return svg;
+}
+
+// marks: [{p:{x,y}, color, label, to:{x,y}}]
+export function drawMarkers(svg, marks) {
+  const g = svg.querySelector('.marks');
+  g.replaceChildren();
+  for (const m of marks) {
+    const a = toSvg(m.p);
+    if (m.to) {
+      const b = toSvg(m.to);
+      g.append(s('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: m.color, 'stroke-width': .5, opacity: .8 }),
+        s('circle', { cx: b.x, cy: b.y, r: 1, fill: m.color }));
+    }
+    g.append(s('circle', { cx: a.x, cy: a.y, r: m.r || 1.6, fill: m.color, stroke: '#000', 'stroke-width': .25 }));
+    if (m.label) g.append(s('text', { x: a.x, y: a.y + .8, 'font-size': 2.2, 'text-anchor': 'middle', fill: '#000', 'font-weight': 700 }, m.label));
+  }
+  return svg;
+}
+
+// Portería vista desde el campo. Celda 0 = arriba-izquierda, fila a fila.
+// counts: {[cell]: texto} opcional para informes; highlight: celda seleccionada.
+export function goalSVG({ onTap, highlight, counts } = {}) {
+  const svg = s('svg', { viewBox: '-8 -8 316 126', class: 'goal', 'aria-label': 'Portería vista desde el campo' });
+  svg.append(s('rect', { x: -8, y: -8, width: 316, height: 126, fill: '#16223b' }), s('rect', { x: -8, y: 108, width: 316, height: 10, fill: '#1f7a3a' }));
+  for (let c = 0; c < 9; c++) {
+    const x = (c % 3) * 100, y = Math.floor(c / 3) * 36;
+    const cellEl = s('rect', { x: x + 1, y: y + 1, width: 98, height: 34, rx: 3, 'data-cell': c,
+      fill: c === highlight ? '#3b82f6' : 'rgba(255,255,255,.06)', stroke: 'rgba(255,255,255,.35)', 'stroke-dasharray': '3 3', style: onTap ? 'cursor:pointer' : null });
+    if (onTap) cellEl.addEventListener('click', () => onTap(c));
+    svg.append(cellEl);
+    if (counts?.[c]) svg.append(s('text', { x: x + 50, y: y + 24, 'text-anchor': 'middle', 'font-size': 16, fill: '#fff', 'font-weight': 700, 'pointer-events': 'none' }, counts[c]));
+  }
+  svg.append(s('path', { d: 'M0 108 V0 H300 V108', fill: 'none', stroke: '#fff', 'stroke-width': 6 }));
+  return svg;
+}
