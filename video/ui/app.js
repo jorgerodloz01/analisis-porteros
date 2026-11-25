@@ -58,7 +58,18 @@ function fillKeepers() {
   invalidate();
 }
 $('backup').onchange = () => $('backup').value && useBackup($('backup').value);
-$('backupOtroOk').onclick = () => { const p = $('backupOtro').value.trim().replace(/^"|"$/g, ''); if (p) useBackup(p); };
+$('backupArchivo').onchange = async () => {
+  const f = $('backupArchivo').files[0];
+  if (!f) return;
+  try {
+    const { path } = await api('/api/backup-subida', { nombre: f.name, contenido: await f.text() });
+    $('backup').prepend(opt(path, `${f.name} · elegida`));
+    $('backup').value = path;
+    $('backupNombre').textContent = '';
+    await useBackup(path);
+  } catch (e) { $('backupNombre').textContent = '⚠ ' + e.message; }
+  $('backupArchivo').value = '';
+};
 $('partido').onchange = fillKeepers;
 $('portero').onchange = () => { const m = st.matches.find(x => x.id === $('partido').value); $('nombre').value = m?.keepers.find(k => k.id === $('portero').value)?.name.split(/\s+/)[0] || ''; invalidate(); };
 

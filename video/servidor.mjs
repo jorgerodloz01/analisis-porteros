@@ -47,12 +47,19 @@ const send = (res, code, body, type = 'application/json; charset=utf-8') => {
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 };
 const fail = (res, code, msg) => send(res, code, { error: msg });
-const body = req => new Promise((ok, ko) => { let b = ''; req.on('data', d => { b += d; if (b.length > 5e6) ko(new Error('Petición demasiado grande')); }); req.on('end', () => { try { ok(JSON.parse(b || '{}')); } catch (e) { ko(e); } }); });
+const body = req => new Promise((ok, ko) => { let b = ''; req.on('data', d => { b += d; if (b.length > 50e6) ko(new Error('Petición demasiado grande')); }); req.on('end', () => { try { ok(JSON.parse(b || '{}')); } catch (e) { ko(e); } }); });
 const needAllowed = p => { if (!isAllowed(p, roots())) throw Object.assign(new Error('Ruta fuera de las carpetas permitidas.'), { code: 403 }); return p; };
 
+const subidas = new Map(); // copias elegidas con el selector de archivos de la página (en memoria)
 async function readBackup(path) {
-  needAllowed(path);
-  const o = JSON.parse(await readFile(path, 'utf8'));
+  let o;
+  if (String(path).startsWith('subida:')) {
+    o = subidas.get(path);
+    if (!o) throw Object.assign(new Error('La copia elegida ya no está cargada: vuelve a elegirla.'), { code: 400 });
+  } else {
+    needAllowed(path);
+    o = JSON.parse(await readFile(path, 'utf8'));
+  }
   const err = validateBackup(o);
   if (err) throw Object.assign(new Error(err), { code: 400 });
   return o;
@@ -137,6 +144,16 @@ const server = http.createServer(async (req, res) => {
       });
     }
     if (req.method === 'GET' && url.pathname === '/video') return await streamVideo(req, res, q('path'));
+    if (req.method === 'POST' && url.pathname === '/api/backup-subida') {
+      const p = await body(req);
+      let o;
+      try { o = JSON.parse(p.contenido); } catch { return fail(res, 400, 'El archivo no es una copia válida (JSON ilegible).'); }
+      const err = validateBackup(o);
+      if (err) return fail(res, 400, err);
+      const path = `subida:${subidas.size + 1}:${String(p.nombre || 'copia').slice(0, 80)}`;
+      subidas.set(path, o);
+      return send(res, 200, { path });
+    }
     if (req.method === 'POST' && url.pathname === '/api/clips') {
       const p = await body(req);
       const o = await readBackup(p.backupPath);

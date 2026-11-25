@@ -25,10 +25,8 @@
       <label>Partido<select id="partido"></select></label>
       <label>Portero<select id="portero"></select></label>
     </div>
-    <details><summary>Usar otra copia</summary>
-      <div class="row"><input id="backupOtro" placeholder="Ruta completa de porteros-backup-….json"><button id="backupOtroOk" class="btn">Usar</button></div>
-    </details>
-    <p class="muted small">La copia se exporta en la app al finalizar el partido (Compartir → Guardar en Archivos → iCloud Drive).</p>
+    <div class="row"><label class="btn" for="backupArchivo">📂 Elegir otra copia…</label><input id="backupArchivo" type="file" accept=".json,application/json" hidden><span id="backupNombre" class="muted small"></span></div>
+    <p class="muted small">Se buscan solas en Descargas y en iCloud Drive. Si no aparece la tuya, bájala a Descargas (desde icloud.com o mandándotela por WhatsApp o correo) y recarga, o elígela con el botón.</p>
   </section>
 
   <section class="card" id="paso3">

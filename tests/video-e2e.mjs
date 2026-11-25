@@ -2,7 +2,7 @@
 // servidor real, página real en Chrome y ffmpeg real. Uso: node tests/video-e2e.mjs  (necesita ffmpeg y Playwright).
 import { createRequire } from 'node:module';
 import { spawn, execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, access } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
@@ -69,6 +69,17 @@ try {
   await page.waitForSelector('.ok, .error', { timeout: 240000 });
   assert.ok(!(await page.locator('.error').count()), await page.locator('.error').textContent().catch(() => ''));
   await page.screenshot({ path: join(T, 'ui-fin.png'), fullPage: true });
+  assert.deepEqual(errors, []);
+  // Elegir una copia desde cualquier carpeta con el selector de archivos (sin escribir rutas)
+  const fuera = join(T, 'otra carpeta', 'porteros-backup-2026-11-30.json');
+  await mkdir(join(T, 'otra carpeta'), { recursive: true });
+  const otra = JSON.parse(await readFile(join(icloud, 'porteros-backup-2026-11-29.json'), 'utf8'));
+  otra.matches[0].rival = 'Upload FC';
+  await writeFile(fuera, JSON.stringify(otra));
+  await page.setInputFiles('#backupArchivo', fuera);
+  await page.waitForFunction(() => [...document.querySelectorAll('#partido option')].some(o => o.textContent.includes('Upload FC')));
+  await page.click('#calcular');
+  await page.waitForFunction(() => document.querySelectorAll('#tabla tbody tr').length === 5);
   assert.deepEqual(errors, []);
   await browser.close();
 

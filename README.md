@@ -57,7 +57,7 @@ Convierte un partido registrado en la app en el vídeo con todas las acciones de
 **Cada semana:**
 1. Registra el partido en la app (en diferido: pausa el cronómetro cuando pauses el vídeo) y, al finalizar, guarda la copia de seguridad en **iCloud Drive**.
 2. Haz doble clic en **«Abrir herramienta de video.cmd»**. Se abre una página en el navegador; deja abierta la ventana negra mientras la usas.
-3. **Vídeo:** propone el vídeo de partido más reciente de Descargas. **Partido:** propone la copia más reciente de iCloud Drive o Descargas; elige partido y portero.
+3. **Vídeo:** propone el vídeo de partido más reciente de Descargas. **Partido:** propone la copia más reciente de Descargas o iCloud Drive (si iCloud no sincroniza en el PC, bájala a Descargas desde icloud.com o mandándotela por WhatsApp/correo, o elígela con «📂 Elegir otra copia…»); elige partido y portero.
 4. **Pitidos:** lleva el vídeo al pitido inicial de cada parte y pulsa «Pitido 1.ª/2.ª parte = aquí». Se recuerdan para ese vídeo.
 5. **Calcular clips:** revisa la lista; puedes quitar un clip, verlo o moverlo 2 segundos.
 6. **Generar:** escribe la jornada y pulsa Generar. Se guardan en la carpeta del portero dentro de `VÍDEO ANÁLISIS 26-27`:
