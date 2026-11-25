@@ -113,7 +113,7 @@ async function generar(p) {
 
 function abrir(path) {
   needAllowed(path);
-  if (process.platform === 'win32') spawn('explorer.exe', [`/select,${path}`], { detached: true, stdio: 'ignore' }).unref();
+  if (process.platform === 'win32') spawn('explorer.exe', ['/select,', path], { detached: true, stdio: 'ignore' }).on('error', () => {}).unref(); // forma «/select, "ruta"»
   else spawn('xdg-open', [dirname(path)], { detached: true, stdio: 'ignore' }).on('error', () => {}).unref();
 }
 
