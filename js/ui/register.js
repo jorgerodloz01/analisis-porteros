@@ -70,8 +70,14 @@ export async function renderRegister(el, matchId) {
   async function finish() {
     if (match.clock.running) toggleClock();
     match.finished = true; await saveMatch();
-    if (confirm('Partido finalizado. Los datos solo están en este iPad. ¿Exportar ahora una copia de seguridad?')) await exportBackup();
-    location.hash = `#/match/${matchId}/report`;
+    // El iPad solo abre «Compartir» tras un toque directo en la página: un confirm() previo lo bloquea. Por eso, botón propio.
+    const toReport = () => { modal.remove(); location.hash = `#/match/${matchId}/report`; };
+    const modal = h('div.modal-backdrop', h('div.modal',
+      h('h3', 'Partido finalizado'),
+      h('p', 'Los datos solo están en este iPad. Exporta una copia y guárdala en iCloud Drive (también la usa la herramienta de vídeo).'),
+      h('div.row', h('button.btn.primary', { onclick: async () => { await exportBackup(); toReport(); } }, 'Exportar copia'),
+        h('button.btn', { onclick: toReport }, 'Ahora no'))));
+    document.body.append(modal);
   }
 
   // ---------- Marca de vídeo: un toque, sin tocar la acción que haya a medias

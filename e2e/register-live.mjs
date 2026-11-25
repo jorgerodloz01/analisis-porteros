@@ -111,4 +111,16 @@ assert.ok(await page.locator('.stage-title:has-text("Marca de vídeo")').count()
 await page.click('.options button:has-text("Otra")');
 await page.waitForFunction(async () => (await (await import('./js/db.js')).all('actions')).find(a => a.type === 'marca')?.attrs.etiqueta === 'otra');
 assert.ok(!(await page.locator('.stage-title:has-text("Marca de vídeo")').count()), 'elegir etiqueta guarda y cierra');
+
+// Finalizar: la copia se ofrece con un botón en la página (el iPad solo abre «Compartir» tras un toque directo)
+const dialogs = [];
+const finId = await page.evaluate(() => location.hash.split('/')[2]);
+page.removeAllListeners('dialog'); page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
+await page.click('button:has-text("Finalizar")');
+await page.waitForSelector('.modal:has-text("Partido finalizado")');
+assert.ok(await page.locator('.modal button:has-text("Exportar copia")').count(), 'botón de exportar en la página');
+assert.deepEqual(dialogs, [], 'sin cuadro de confirmación del navegador');
+await page.click('.modal button:has-text("Ahora no")');
+await page.waitForFunction(() => location.hash.endsWith('/report'));
+assert.equal((await page.evaluate(async id => (await (await import('./js/db.js')).all('matches')).find(m => m.id === id), finId)).finished, true);
 await done();

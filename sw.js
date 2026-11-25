@@ -1,6 +1,6 @@
 // Sin conexión. VERSION se cambia en cada publicación: así el navegador detecta un sw.js nuevo,
 // precarga TODOS los archivos de la versión nueva de una vez y borra la anterior (nunca mezcla versiones).
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 const CACHE = 'porteros-' + VERSION;
 const FILES = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   'js/app.js', 'js/backup.js', 'js/catalog.js', 'js/db.js', 'js/logic.js',
