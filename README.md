@@ -25,6 +25,8 @@ App web para iPad que registra las acciones de tus porteros durante un partido, 
    - Elige la pestaña (Defensa / Distribución / ABP) y el tipo de acción. Toca en el campo o la portería y elige las opciones. Cada toque avanza al siguiente paso.
    - Los pasos con ★ son obligatorios y el resto puedes saltarlos. Pulsa **Guardar**.
    - El minuto se toma al elegir la acción. Puedes corregirlo con el botón ⏱ (admite añadido: `45+2`, `90+3`).
+   - **Balón a la espalda** (pestaña Defensa): registra los pases a la espalda de la defensa con la decisión (sale / se queda), igual que los centros. Sale en el informe y en la temporada.
+   - **🎬 Marcar** (abajo a la izquierda): un toque guarda el instante para el vídeo sin interrumpir lo que estés registrando. Aparece un aviso para etiquetarla (colocación en centro, finalización sin tiro, otra). Las marcas **no cuentan en las estadísticas**; sirven para que esas jugadas salgan en el vídeo.
    - **↶ Deshacer última** borra la última acción guardada. Si cambias de acción con datos sin guardar, la app te pregunta antes de descartarlos.
    - La portería y el lado del penalti se registran **vistos desde el campo**, como en la imagen de la TV.
    - Para editar una acción, tócala en el registro de la derecha. Para borrarla, pulsa ✕.
@@ -46,6 +48,26 @@ Los datos viven **solo en este iPad**, en el almacenamiento de Safari. Si borras
 
 Cada vez que publiques cambios en el código, **sube el número `VERSION` de `sw.js`** (por ejemplo, de `1.1.0` a `1.1.1`). El iPad descarga la versión nueva completa en segundo plano y la usa **a partir de la siguiente vez** que abras la app. Si no cambias `VERSION`, el iPad seguirá usando la versión anterior.
 
+## 6. Vídeo automático del portero (en el PC)
+
+Convierte un partido registrado en la app en el vídeo con todas las acciones del portero, rotuladas, y otro solo con las paradas.
+
+**Lo que necesitas (una vez):** Node.js (ya lo tienes) y ffmpeg. Si la herramienta avisa de que falta ffmpeg, abre PowerShell y ejecuta `winget install --id Gyan.FFmpeg -e`; después cierra y vuelve a abrir la herramienta.
+
+**Cada semana:**
+1. Registra el partido en la app (en diferido: pausa el cronómetro cuando pauses el vídeo) y, al finalizar, guarda la copia de seguridad en **iCloud Drive**.
+2. Haz doble clic en **«Abrir herramienta de video.cmd»**. Se abre una página en el navegador; deja abierta la ventana negra mientras la usas.
+3. **Vídeo:** propone el vídeo de partido más reciente de Descargas. **Partido:** propone la copia más reciente de iCloud Drive o Descargas; elige partido y portero.
+4. **Pitidos:** lleva el vídeo al pitido inicial de cada parte y pulsa «Pitido 1.ª/2.ª parte = aquí». Se recuerdan para ese vídeo.
+5. **Calcular clips:** revisa la lista; puedes quitar un clip, verlo o moverlo 2 segundos.
+6. **Generar:** escribe la jornada y pulsa Generar. Se guardan en la carpeta del portero dentro de `VÍDEO ANÁLISIS 26-27`:
+   - `Vídeo Análisis <Portero> vs <Rival> J<n>.mp4`
+   - `PARADAS <Portero> vs <Rival> J<n>.mp4` (en `PARADAS <PORTERO>` si existe)
+
+**Cómo corta:** la app apunta el minuto cuando eliges la acción, es decir, unos segundos después de la jugada, así que cada clip empieza antes: tiros y salidas 10 s antes y 4 después; centros 12/4; distribución 4/6; ABP defensiva 15/5; marcas 12/4. Las acciones seguidas se unen en un solo clip. Puedes cambiar los márgenes copiando `video/config.ejemplo.json` como `video/config.json`.
+
+El vídeo original no se modifica y nada sale de tu PC.
+
 ## Notas sobre las métricas
 
 - **% paradas** = paradas / tiros a puerta. A puerta = gol, blocaje, rechace o córner. «Fuera / poste» no cuenta como tiro a puerta.
@@ -59,3 +81,4 @@ Cada vez que publiques cambios en el código, **sube el número `VERSION` de `sw
 - Pruebas de lógica: `npm test`
 - Pruebas en navegador (Playwright, tamaño iPad): `node e2e/setup.mjs`, `register-live.mjs`, `report.mjs`, `season.mjs` y `offline.mjs`
 - Iconos: `node scripts/make-icons.mjs`
+- Herramienta de vídeo: `npm run video`; prueba completa con vídeo sintético (ffmpeg + Playwright): `npm run e2e:video`
