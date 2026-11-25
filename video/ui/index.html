@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vídeo del portero · Análisis Porteros</title>
+<link rel="stylesheet" href="/ui/estilos.css">
+</head>
+<body>
+<header><strong>🧤 Vídeo del portero</strong><span class="muted">Del registro de la app al vídeo de acciones</span></header>
+<div id="aviso" class="aviso" hidden></div>
+<main>
+  <section class="card" id="paso1">
+    <h2><span class="n">1</span> Vídeo del partido</h2>
+    <select id="video"></select>
+    <details><summary>Usar otro archivo</summary>
+      <div class="row"><input id="videoOtro" placeholder="Pega la ruta completa del vídeo (C:\Users\…\partido.mp4)"><button id="videoOtroOk" class="btn">Usar</button></div>
+    </details>
+  </section>
+
+  <section class="card" id="paso2">
+    <h2><span class="n">2</span> Partido registrado en la app</h2>
+    <div class="grid3">
+      <label>Copia de la app<select id="backup"></select></label>
+      <label>Partido<select id="partido"></select></label>
+      <label>Portero<select id="portero"></select></label>
+    </div>
+    <details><summary>Usar otra copia</summary>
+      <div class="row"><input id="backupOtro" placeholder="Ruta completa de porteros-backup-….json"><button id="backupOtroOk" class="btn">Usar</button></div>
+    </details>
+    <p class="muted small">La copia se exporta en la app al finalizar el partido (Compartir → Guardar en Archivos → iCloud Drive).</p>
+  </section>
+
+  <section class="card" id="paso3">
+    <h2><span class="n">3</span> Pitido inicial de cada parte</h2>
+    <video id="player" controls preload="metadata"></video>
+    <div class="row nav">
+      <button class="btn" data-j="-300">−5′</button><button class="btn" data-j="-30">−30″</button><button class="btn" data-j="-5">−5″</button><button class="btn" data-j="-1">−1″</button>
+      <span class="clock" id="pos">00:00:00</span>
+      <button class="btn" data-j="1">+1″</button><button class="btn" data-j="5">+5″</button><button class="btn" data-j="30">+30″</button><button class="btn" data-j="300">+5′</button>
+    </div>
+    <div class="grid2">
+      <div class="kick"><button class="btn primary" id="k1">Pitido 1.ª parte = aquí</button><input id="k1v" placeholder="hh:mm:ss"></div>
+      <div class="kick"><button class="btn primary" id="k2">Pitido 2.ª parte = aquí</button><input id="k2v" placeholder="hh:mm:ss"></div>
+    </div>
+    <p class="muted small">Lleva el vídeo justo al pitido y pulsa el botón (o escribe el tiempo). Se recuerda para este vídeo.</p>
+  </section>
+
+  <section class="card" id="paso4">
+    <h2><span class="n">4</span> Revisar clips</h2>
+    <div class="row"><button class="btn primary" id="calcular">Calcular clips</button><span id="resumen" class="muted"></span></div>
+    <table class="t" id="tabla" hidden>
+      <thead><tr><th></th><th>Acción</th><th>Inicio</th><th>Fin</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="paso5">
+    <h2><span class="n">5</span> Generar</h2>
+    <div class="grid3">
+      <label>Nombre del portero en el vídeo<input id="nombre"></label>
+      <label>Jornada<input id="jornada" inputmode="numeric" placeholder="12"></label>
+      <label>Orden<select id="orden"><option value="crono">Cronológico</option><option value="bloques">Por bloques (defensa, distribución, ABP, marcas)</option></select></label>
+    </div>
+    <label class="check"><input type="checkbox" id="paradas" checked> Generar también el vídeo de paradas</label>
+    <p class="muted small" id="destino"></p>
+    <div class="row"><button class="btn primary big" id="generar" disabled>Generar vídeo</button></div>
+    <div id="progreso" hidden><progress id="barra" max="1" value="0"></progress><span id="fase"></span></div>
+    <div id="resultado"></div>
+  </section>
+</main>
+<script type="module" src="/ui/app.js"></script>
+</body>
+</html>

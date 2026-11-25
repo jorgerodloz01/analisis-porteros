@@ -1,0 +1,8 @@
+{
+  "_ayuda": "Copia este archivo como config.json (en la misma carpeta) solo si quieres cambiar algo. Sin config.json se usan estos valores.",
+  "carpetasVideo": ["C:\\Users\\jorge\\Downloads"],
+  "carpetasCopias": ["C:\\Users\\jorge\\iCloudDrive", "C:\\Users\\jorge\\Downloads"],
+  "carpetaSalida": "C:\\Users\\jorge\\OneDrive\\Escritorio\\VÍDEO ANÁLISIS 26-27",
+  "ventanas": { "tiro": [10, 4], "centro": [12, 4], "pase": [4, 6], "marca": [12, 4] },
+  "puerto": 8765
+}
