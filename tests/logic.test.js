@@ -87,3 +87,20 @@ test('parseMinute', () => {
   for (const bad of ['', 'x', '0', '130', '30+1', '-5']) assert.equal(parseMinute(bad), null, bad);
   for (const [h, t] of [[1, 0], [1, 2760], [2, 0], [2, 2820]]) assert.deepEqual(parseMinute(minuteLabel(h, t)), { half: h, t }, 'ida y vuelta');
 });
+
+test('balón a la espalda: mismas métricas que los centros', () => {
+  const s = matchStats([
+    A('espalda', { decision: 'sale', resultado: 'exito', valoracion: 'correcta' }, { punto: { x: .5, y: .3 } }),
+    A('espalda', { decision: 'se_queda', resultado: 'fallo', valoracion: 'debia_salir' }, { punto: { x: .5, y: .3 } }),
+  ]);
+  assert.equal(s.espalda.n, 2);
+  assert.equal(s.espalda.intervention.value, 0.5);
+  assert.equal(s.espalda.success.value, 1);
+  assert.equal(s.espalda.correctDecision.value, 0.5);
+});
+
+test('las marcas de vídeo no cuentan en ninguna estadística', () => {
+  const base = matchStats(fixture);
+  const conMarca = matchStats([...fixture, A('marca', { etiqueta: 'finalizacion' }), A('marca', {}, {}, { half: 2 })]);
+  assert.deepEqual(conMarca, base);
+});

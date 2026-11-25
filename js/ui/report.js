@@ -54,7 +54,7 @@ export function statsBlock(stats, actions) {
     h('section.card',
       h('h2', 'Juego aéreo y salidas'),
       table(['Acción', 'n', 'Intervención (sale)', 'Éxito (de las salidas)', 'Decisión correcta'], [
-        aerialRow('Centros laterales', stats.crosses), aerialRow('Juego aéreo frontal', stats.aerial),
+        aerialRow('Centros laterales', stats.crosses), aerialRow('Juego aéreo frontal', stats.aerial), aerialRow('Balón a la espalda', stats.espalda),
         ['Salidas / 1v1', String(stats.oneVone.n), '—', fmtPct(stats.oneVone.success), fmtPct(stats.oneVone.correctDecision)]])),
     h('section.card',
       h('h2', `Distribución · ${d.n} acciones`),

@@ -48,7 +48,8 @@ function groupPct(list, keyOf, keys) {
   }));
 }
 
-export function matchStats(actions) {
+export function matchStats(all) {
+  const actions = all.filter(a => a.type !== 'marca'); // las marcas de vídeo no son estadística
   const of = type => actions.filter(a => a.type === type);
   const shots = of('tiro');
   const onTarget = shots.filter(a => ON_TARGET.includes(a.attrs.resultado));
@@ -73,6 +74,7 @@ export function matchStats(actions) {
     goalsNotAvoidable: count(goalsAll, a => a.attrs.evitable === 'no'),
     crosses: aerialStats(of('centro')),
     aerial: aerialStats(of('aereo')),
+    espalda: aerialStats(of('espalda')),
     oneVone: {
       n: ones.length,
       success: pct(count(ones, a => a.attrs.resultado === 'exito'), ones.length),

@@ -92,6 +92,7 @@ export async function renderSeason(el, state) {
       ['Centros: % intervención', r => fmtPct(r.totals.crosses.intervention)],
       ['Centros: % decisión correcta', r => fmtPct(r.totals.crosses.correctDecision)],
       ['Juego aéreo: % éxito', r => fmtPct(r.totals.aerial.success)],
+      ['Espalda: % intervención', r => fmtPct(r.totals.espalda.intervention)],
       ['1v1: % éxito', r => fmtPct(r.totals.oneVone.success)],
       ['Distribución: % éxito', r => fmtPct(r.totals.dist.total)],
       ['Distribución a 3.ª línea', r => fmtPct(r.totals.dist.byLine[3])],

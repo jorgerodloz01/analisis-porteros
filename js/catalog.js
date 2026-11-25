@@ -60,6 +60,16 @@ export const TYPES = {
       VALORACION,
     ],
   },
+  espalda: {
+    label: 'Balón a la espalda',
+    steps: [
+      pitch('punto', 'Punto de caída', true),
+      choice('decision', 'Decisión', o(['sale', 'Sale'], ['se_queda', 'Se queda']), true),
+      choice('accion', 'Acción', o(['pie', 'Despeje con pie'], ['cabeza', 'Cabeza'], ['controla', 'Controla y juega'], ['blocaje', 'Blocaje'], ['entrada', 'Entrada'], ['no_llega', 'No llega']), false, a => a.attrs.decision === 'sale'),
+      choice('resultado', 'Resultado', o(['exito', 'Éxito'], ['fallo', 'Fallo']), true),
+      VALORACION,
+    ],
+  },
   pase: dist('Pase en juego'),
   mano: dist('Saque con mano', false),
   volea: dist('Volea / media volea'),
@@ -88,10 +98,15 @@ export const TYPES = {
       choice('resultado', 'Resultado', o(['exito', 'Éxito'], ['fallo', 'Fallo'])),
     ],
   },
+  // Marca de vídeo: un toque desde la cabecera del registro. No cuenta en estadísticas ni está en ninguna pestaña.
+  marca: {
+    label: 'Marca de vídeo',
+    steps: [choice('etiqueta', 'Qué es', o(['colocacion_centro', 'Colocación en centro'], ['finalizacion', 'Finalización sin tiro'], ['otra', 'Otra']))],
+  },
 };
 
 export const TABS = [
-  { key: 'defensa', label: 'Defensa', sub: 'Tiros · centros · salidas', types: ['tiro', 'centro', 'aereo', 'salida'] },
+  { key: 'defensa', label: 'Defensa', sub: 'Tiros · centros · espalda · salidas', types: ['tiro', 'centro', 'aereo', 'espalda', 'salida'] },
   { key: 'distribucion', label: 'Distribución', sub: 'Pases · saques', types: ['pase', 'mano', 'volea', 'saque_puerta'] },
   { key: 'abp', label: 'ABP', sub: 'Defensiva · penaltis · ofensiva', types: ['abp_def', 'penalti', 'abp_of'] },
 ];

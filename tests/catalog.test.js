@@ -42,3 +42,18 @@ test('cleanAction quita datos de pasos ocultos', () => {
   const b = cleanAction({ type: 'abp_def', points: {}, attrs: { subtipo: 'corner', barrera: '3', intervencion: 'ninguna' } });
   assert.deepEqual(b.attrs, { subtipo: 'corner', intervencion: 'ninguna' });
 });
+
+test('balón a la espalda: en Defensa, con decisión y resultado obligatorios', () => {
+  assert.ok(TABS.find(t => t.key === 'defensa').types.includes('espalda'));
+  assert.deepEqual(missingRequired('espalda', { points: {}, attrs: {} }), ['punto', 'decision', 'resultado']);
+  const keys = a => visibleSteps('espalda', a).map(s => s.key);
+  assert.ok(!keys({ points: {}, attrs: { decision: 'se_queda' } }).includes('accion'));
+  assert.ok(keys({ points: {}, attrs: { decision: 'sale' } }).includes('accion'));
+});
+
+test('marca de vídeo: sin pasos obligatorios y fuera de las pestañas', () => {
+  assert.ok(TYPES.marca);
+  assert.deepEqual(missingRequired('marca', { points: {}, attrs: {} }), []);
+  assert.ok(TABS.every(t => !t.types.includes('marca')));
+  assert.deepEqual(TYPES.marca.steps.find(s => s.key === 'etiqueta').options.map(o => o.value), ['colocacion_centro', 'finalizacion', 'otra']);
+});
