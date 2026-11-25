@@ -29,7 +29,7 @@ Cada semana Jorge monta con Clipchamp el vídeo del partido anterior para el por
 ## 3. Cambios en la app (iPad)
 
 1. **Nuevo tipo «Balón a la espalda»** (pestaña Defensa), con la misma estructura que los centros: punto de caída★, decisión★ (sale / se queda), acción si sale (despeje con pie, cabeza, controla y juega, blocaje, entrada, no llega), resultado★ (éxito / fallo), valoración de la decisión. Estadísticas: n, % intervención, % éxito de las salidas, % decisión correcta (mismo cálculo que centros). Aparece en el informe y en la temporada.
-2. **Botón «🎬 Marcar»** en la cabecera del registro. Un toque guarda una «marca de vídeo» en el instante del cronómetro, sin interrumpir una acción a medias. Aparece un aviso con etiquetas opcionales (Colocación en centro · Finalización sin tiro · Otra); tocar una la asigna. Las marcas **no cuentan en ninguna estadística**; salen en la lista de acciones del informe y en el CSV.
+2. **Botón «🎬 Marcar»** fijo al pie de la columna de acciones del registro (visible en las tres pestañas). Un toque guarda una «marca de vídeo» en el instante del cronómetro, sin interrumpir una acción a medias. Aparece un aviso con etiquetas opcionales (Colocación en centro · Finalización sin tiro · Otra); tocar una la asigna. Las marcas **no cuentan en ninguna estadística**; salen en la lista de acciones del informe y en el CSV.
 3. Versión de la app 1.3.0 (el iPad la descarga sola).
 
 ## 4. Herramienta de vídeo (PC con Windows)

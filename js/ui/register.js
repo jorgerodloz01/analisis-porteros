@@ -74,6 +74,28 @@ export async function renderRegister(el, matchId) {
     location.hash = `#/match/${matchId}/report`;
   }
 
+  // ---------- Marca de vídeo: un toque, sin tocar la acción que haya a medias
+  const toastEl = h('div.toast.no-print', { hidden: true });
+  let toastTimer;
+  async function marcar() {
+    const a = { id: uid(), matchId, keeperId: st.draft?.keeperId ?? st.keeperId, half: match.clock.half, t: Math.floor(now()),
+      type: 'marca', points: {}, attrs: {}, note: '', createdAt: Date.now() };
+    try { await db.put('actions', a); } catch (e) { fail('guardar la marca', e); return; }
+    st.actions.push(a); paintLog();
+    const tag = async value => {
+      const upd = { ...a, attrs: { etiqueta: value } };
+      try { await db.put('actions', upd); } catch (e) { fail('etiquetar la marca', e); return; }
+      st.actions = st.actions.map(x => (x.id === a.id ? upd : x));
+      toastEl.hidden = true; paintLog();
+    };
+    clearTimeout(toastTimer);
+    toastEl.replaceChildren(h('span', `🎬 Marca guardada · ${minuteLabel(a.half, a.t)}`),
+      ...TYPES.marca.steps[0].options.map(o => h('button.btn.small', { onclick: () => tag(o.value) }, o.label)),
+      h('button.btn.small', { 'aria-label': 'Cerrar', onclick: () => { toastEl.hidden = true; } }, '✕'));
+    toastEl.hidden = false;
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 6000);
+  }
+
   // ---------- Cuerpo
   const tabsEl = h('div.reg-tabs');
   const typesEl = h('div.types');
@@ -132,7 +154,7 @@ export async function renderRegister(el, matchId) {
         h('p.muted', 'Portería vista desde el campo (izquierda/derecha según la imagen).')));
     } else if (step.kind === 'choice') {
       stageMain.replaceChildren(h('div.options', step.options.map(o => h('button' + (d.attrs[step.key] === o.value ? '.on' : ''), {
-        onclick: () => { if (d.attrs[step.key] === o.value) delete d.attrs[step.key]; else d.attrs[step.key] = o.value; advance(); },
+        onclick: () => { if (d.attrs[step.key] === o.value) delete d.attrs[step.key]; else d.attrs[step.key] = o.value; if (d.type === 'marca') save(); else advance(); },
       }, o.label))));
     } else if (step.kind === 'receptor') {
       const other = h('input', { type: 'number', placeholder: 'Otro dorsal', style: 'width:140px', inputMode: 'numeric' });
@@ -196,14 +218,14 @@ export async function renderRegister(el, matchId) {
 
   function paintLog() {
     const res = a => {
-      const step = TYPES[a.type].steps.find(s => s.key === 'resultado' || s.key === 'intervencion' || s.key === 'participacion');
+      const step = TYPES[a.type].steps.find(s => ['resultado', 'intervencion', 'participacion', 'etiqueta'].includes(s.key));
       return step?.options.find(o => o.value === a.attrs[step.key])?.label || '';
     };
     const kName = id => keepers.find(k => k.id === id)?.name.split(' ')[0] || '';
     const sorted = [...st.actions].sort((a, b) => b.half - a.half || b.t - a.t || b.createdAt - a.createdAt);
     logEl.replaceChildren(...sorted.map(a => h('li' + (st.draft?.id === a.id ? '.editing' : ''), {
-      onclick: e => { if (e.target.closest('button') || !discardOk()) return; st.draft = structuredClone(a); st.step = 0; st.tab = TABS.find(t => t.types.includes(a.type)).key; paintAll(); },
-    }, h('span', h('b', minuteLabel(a.half, a.t)), ' ', TYPES[a.type].label, ' · ', res(a), keepers.length > 1 ? h('span.muted', ` · ${kName(a.keeperId)}`) : null, a.note ? ' 📝' : ''),
+      onclick: e => { if (e.target.closest('button') || !discardOk()) return; st.draft = structuredClone(a); st.step = 0; st.tab = TABS.find(t => t.types.includes(a.type))?.key ?? st.tab; paintAll(); },
+    }, h('span', h('b', minuteLabel(a.half, a.t)), ' ', TYPES[a.type].label, res(a) ? ` · ${res(a)}` : '', keepers.length > 1 ? h('span.muted', ` · ${kName(a.keeperId)}`) : null, a.note ? ' 📝' : ''),
       h('button.btn.small.danger', { 'aria-label': 'Borrar acción', onclick: () => remove(a) }, '✕'))));
     countEl.textContent = `Registro · ${st.actions.length}`;
     undoBtn.disabled = !st.actions.length;
@@ -225,9 +247,10 @@ export async function renderRegister(el, matchId) {
   function paintAll() { paintHead(); paintTabs(); paintKeepers(); paintStage(); paintSteps(); paintLog(); }
 
   el.append(h('div.reg', head, tabsEl,
-    h('div.reg-body', typesEl,
+    h('div.reg-body', h('div.types-col', typesEl,
+      h('button.mark', { onclick: () => marcar(), title: 'Guarda este instante para el vídeo (no cuenta en estadísticas)' }, '🎬 Marcar')),
       h('div.stage', stageTitle, stageMain),
       h('div.side', h('div.card', h('h2', 'Portero'), keeperEl), h('div.card.log-card', { style: 'flex:1;display:flex;flex-direction:column;min-height:0' }, h('div.row', { style: 'justify-content:space-between' }, countEl, undoBtn), logEl))),
-    stepsEl));
+    stepsEl, toastEl));
   paintAll(); tick();
 }

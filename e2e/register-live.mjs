@@ -91,4 +91,24 @@ await page.waitForFunction(() => document.querySelectorAll('.log li').length ===
 // borrar
 await page.locator('.log li').first().locator('button:has-text("✕")').click();
 await page.waitForFunction(() => document.querySelectorAll('.log li').length === 1);
+
+// marca de vídeo: un toque, sin perder la acción a medias; etiqueta opcional; editable desde el registro
+page.removeAllListeners('dialog'); page.on('dialog', d => d.accept());
+await page.click('.reg-tabs button:has-text("Defensa")');
+await page.click('.types button:has-text("Tiro")');
+await tapPitch(0.5, 0.2);
+await page.click('button:has-text("🎬 Marcar")');
+await page.waitForFunction(() => document.querySelectorAll('.log li').length === 2);
+assert.ok(await page.locator('.stage-title:has-text("Tiro / parada")').count(), 'el tiro a medias sigue en pantalla');
+await page.click('.toast button:has-text("Finalización sin tiro")');
+const marca = await page.evaluate(async () => (await (await import('./js/db.js')).all('actions')).find(a => a.type === 'marca'));
+assert.equal(marca.attrs.etiqueta, 'finalizacion');
+assert.equal(typeof marca.t, 'number');
+assert.ok(await page.locator('.log li:has-text("Marca de vídeo · Finalización sin tiro")').count(), 'la marca aparece etiquetada en el registro');
+await page.click('.steps button:has-text("Cancelar")');
+await page.locator('.log li:has-text("Marca de vídeo")').click();
+assert.ok(await page.locator('.stage-title:has-text("Marca de vídeo")').count(), 'la marca se puede editar');
+await page.click('.options button:has-text("Otra")');
+await page.waitForFunction(async () => (await (await import('./js/db.js')).all('actions')).find(a => a.type === 'marca')?.attrs.etiqueta === 'otra');
+assert.ok(!(await page.locator('.stage-title:has-text("Marca de vídeo")').count()), 'elegir etiqueta guarda y cierra');
 await done();

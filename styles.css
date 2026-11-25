@@ -131,3 +131,11 @@ table.t th { color: var(--muted); font-weight: 500; }
 .evo-chart .pt.hollow.s1 { stroke: var(--s1); } .evo-chart .pt.hollow.s2 { stroke: var(--s2); } .evo-chart .pt.hollow.s3 { stroke: var(--s3); }
 .legend i.s1 { background: var(--s1); } .legend i.s2 { background: var(--s2); } .legend i.s3 { background: var(--s3); }
 @media print { :root { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; } }
+
+/* Marca de vídeo */
+.types-col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.types-col .types { flex: 1; }
+.types-col .mark { min-height: 64px; border-radius: 10px; border: 1px solid var(--warn); background: var(--panel); font-weight: 600; }
+.toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 50; display: flex; gap: 8px; align-items: center; white-space: nowrap;
+  background: var(--panel); border: 1px solid var(--warn); border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+.toast[hidden] { display: none; }

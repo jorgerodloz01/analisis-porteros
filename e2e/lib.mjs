@@ -11,7 +11,7 @@ export const BASE = 'http://localhost:8123/';
 export async function start() {
   const srv = spawn('python3', ['-m', 'http.server', '8123', '-d', root], { stdio: 'ignore' });
   await new Promise(r => setTimeout(r, 600));
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const context = await browser.newContext({ viewport: { width: 1180, height: 820 }, acceptDownloads: true });
   const page = await context.newPage();
   const errors = [];

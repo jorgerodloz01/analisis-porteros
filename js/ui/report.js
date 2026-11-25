@@ -100,7 +100,7 @@ export async function renderReport(el, matchId, keeperFilter = null) {
   const kById = Object.fromEntries(all.map(k => [k.id, k]));
   const who = keeperFilter ? kById[keeperFilter].name : keepers.map(k => `${k.name} (${match.keepers.find(x => x.keeperId === k.id).minutes}′)`).join(', ');
   const res = a => {
-    const step = TYPES[a.type].steps.find(s => ['resultado', 'intervencion', 'participacion'].includes(s.key));
+    const step = TYPES[a.type].steps.find(s => ['resultado', 'intervencion', 'participacion', 'etiqueta'].includes(s.key));
     return [label(a.type, step?.key, a.attrs[step?.key]), a.attrs.evitable && `evitable: ${label('tiro', 'evitable', a.attrs.evitable)}`].filter(Boolean).join(' · ');
   };
   el.append(h('div.page',
