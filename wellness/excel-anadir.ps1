@@ -6,6 +6,8 @@ param(
   [switch]$Simular,
   [switch]$Todo   # sin él, solo se escriben días desde el último que ya tiene datos (la historia escrita a mano no se toca)
 )
+# ConvertFrom-Json (Windows PowerShell 5.1) da los decimales como [decimal] y Excel no los acepta por COM: van como [double].
+function Valor($v) { if ($v -is [string] -or $v -is [bool]) { return $v }; return [double]$v }
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $resultado = $null; $codigo = 0; $xl = $null; $wb = $null; $copia = $null
@@ -71,7 +73,7 @@ try {
     $body.Cells.Item($i, $col['Portero']).Value2 = [string]$r.portero
     foreach ($kv in $campos.GetEnumerator()) {
       $valor = $r.($kv.Key)
-      if ($valor -ne $null -and [string]$valor -ne '') { $body.Cells.Item($i, $col[$kv.Value]).Value2 = $valor }
+      if ($valor -ne $null -and [string]$valor -ne '') { $body.Cells.Item($i, $col[$kv.Value]).Value2 = (Valor $valor) }
     }
     $mapa[$k] = @{ fila = $i; tiene = $true }
   }

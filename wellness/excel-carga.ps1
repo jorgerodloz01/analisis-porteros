@@ -6,6 +6,8 @@ param(
   [switch]$Simular,
   [switch]$Todo   # sin él, solo días desde el último que ya tiene RPE
 )
+# ConvertFrom-Json (Windows PowerShell 5.1) da los decimales como [decimal] y Excel no los acepta por COM: van como [double].
+function Valor($v) { if ($v -is [string] -or $v -is [bool]) { return $v }; return [double]$v }
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $resultado = $null; $codigo = 0; $xl = $null; $wb = $null; $copia = $null
@@ -62,7 +64,7 @@ try {
       $i = $mapa[$k]; $huecos = 0
       foreach ($kv in $campos.GetEnumerator()) {
         $valor = $r.($kv.Key); $celda = $body.Cells.Item($i, $col[$kv.Value])
-        if ($valor -ne $null -and [string]$valor -ne '' -and [string]$celda.Value2 -eq '') { $huecos++; if (-not $Simular) { $celda.Value2 = $valor } }
+        if ($valor -ne $null -and [string]$valor -ne '' -and [string]$celda.Value2 -eq '') { $huecos++; if (-not $Simular) { $celda.Value2 = (Valor $valor) } }
       }
       if ($huecos -gt 0) { $completadas++; $fechas += "$($r.fecha) $($r.portero) (completada)" } else { $yaEstaban++ }
       continue
@@ -78,7 +80,7 @@ try {
     $body.Cells.Item($i, $col['Portero']).Value2 = [string]$r.portero
     foreach ($kv in $campos.GetEnumerator()) {
       $valor = $r.($kv.Key)
-      if ($valor -ne $null -and [string]$valor -ne '') { $body.Cells.Item($i, $col[$kv.Value]).Value2 = $valor }
+      if ($valor -ne $null -and [string]$valor -ne '') { $body.Cells.Item($i, $col[$kv.Value]).Value2 = (Valor $valor) }
     }
   }
   if (-not $Simular -and ($anadidas + $completadas) -gt 0) { $wb.Save() }
