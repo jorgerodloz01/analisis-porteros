@@ -87,9 +87,10 @@ try {
   const outA = join(base, 'JONATAN MORILLA', "Vídeo Análisis Jona vs CE L'Hospitalet J12.mp4");
   const outP = join(base, 'PARADAS JONATAN MORILLA', "PARADAS Jona vs CE L'Hospitalet J12.mp4");
   await access(outA); await access(outP);
-  // 3 s portada + clips 19 + 10 + 16 + 16 + 8 = 72 s; paradas: 3 + 19 + 8 = 30 s
-  assert.ok(Math.abs(dur(outA) - 72) < 0.6, `duración acciones ${dur(outA)}`);
-  assert.ok(Math.abs(dur(outP) - 30) < 0.6, `duración paradas ${dur(outP)}`);
+  // 3 s portada + clips 25 (dos tiros unidos) + 12 (pase) + 18 (marca) + 20 (centro) + 8 (penalti, cortado al final del vídeo) = 86 s
+  // paradas: 3 + 25 + 8 = 36 s
+  assert.ok(Math.abs(dur(outA) - 86) < 0.6, `duración acciones ${dur(outA)}`);
+  assert.ok(Math.abs(dur(outP) - 36) < 0.6, `duración paradas ${dur(outP)}`);
   execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', '3.5', '-i', outA, '-frames:v', '1', join(T, 'frame-3.5s.jpg')]);
   console.log('OK · archivos en', T);
 } finally { srv.kill(); }

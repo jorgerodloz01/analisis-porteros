@@ -32,8 +32,8 @@ test('clipArgs: un rótulo por acción, desde archivo de texto y con su interval
 });
 
 test('labelWindows: cada rótulo aparece al empezar su jugada', () => {
-  const clip = { start: 650, end: 669, actions: [{ type: 'tiro', at: 10 }, { type: 'tiro', at: 15 }] };
-  assert.deepEqual(labelWindows(clip), [{ from: 0, to: 5 }, { from: 5, to: 19 }]);
+  const clip = { start: 652, end: 677, actions: [{ type: 'tiro', at: 8 }, { type: 'tiro', at: 13 }] };
+  assert.deepEqual(labelWindows(clip), [{ from: 0, to: 5 }, { from: 5, to: 25 }]);
 });
 
 test('titleArgs: portada de 3 s con el mismo formato que los clips', () => {

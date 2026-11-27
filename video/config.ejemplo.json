@@ -3,6 +3,6 @@
   "carpetasVideo": ["C:\\Users\\jorge\\Downloads"],
   "carpetasCopias": ["C:\\Users\\jorge\\iCloudDrive", "C:\\Users\\jorge\\Downloads"],
   "carpetaSalida": "C:\\Users\\jorge\\OneDrive\\Escritorio\\VÍDEO ANÁLISIS 26-27",
-  "ventanas": { "tiro": [10, 4], "centro": [12, 4], "pase": [4, 6], "marca": [12, 4] },
+  "ventanas": { "tiro": [8, 12], "centro": [8, 12], "pase": [4, 8], "marca": [10, 8] },
   "puerto": 8765
 }
