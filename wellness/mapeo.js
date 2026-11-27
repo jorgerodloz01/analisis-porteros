@@ -33,10 +33,16 @@ export function fechaMadrid(enviado) {
   return { fecha: `${parts.year}-${parts.month}-${parts.day}`, hora: `${parts.hour}:${parts.minute}` };
 }
 
+// Las opciones del formulario son franjas («5 - 6 horas», «Menos de 5», «+ 8»): se apunta el centro de la franja.
 export function horasSueno(v) {
   if (typeof v === 'number') return v;
-  const m = String(v ?? '').match(/(\d+(?:[.,]\d+)?)/);
-  return m ? Number(m[1].replace(',', '.')) : null;
+  const t = normaliza(v).replace(',', '.');
+  let m;
+  if ((m = t.match(/menos de\s*(\d+(?:\.\d+)?)/))) return Number(m[1]) - 0.5;
+  if ((m = t.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/))) return (Number(m[1]) + Number(m[2])) / 2;
+  if ((m = t.match(/\+\s*(\d+(?:\.\d+)?)/))) return Number(m[1]) + 0.5;
+  m = t.match(/(\d+(?:\.\d+)?)/);
+  return m ? Number(m[1]) : null;
 }
 
 const ALIAS = { jona: 'Jonatan Morilla', jonatan: 'Jonatan Morilla', morilla: 'Jonatan Morilla', uri: 'Oriol Dalmau', oriol: 'Oriol Dalmau', dalmau: 'Oriol Dalmau' };
@@ -59,13 +65,14 @@ function fila({ id, enviado, valores, zonas }, { porteros = [], alias = {}, dolo
   const { fecha, hora } = fechaMadrid(enviado);
   const portero = aPortero(valores.nombre, porteros, alias);
   const quien = `${fecha} ${portero}`;
-  if (porteros.length && !porteros.includes(portero)) avisos.push(`${quien}: «${portero}» no está en la lista de porteros del Excel (CONFIG)`);
+  if (porteros.length && !porteros.includes(portero)) avisos.push(`«${portero}» no está en la lista de porteros del Excel (CONFIG): sus filas entran igual`);
   const out = { id, enviado: new Date(/Z|[+-]\d\d:?\d\d$/.test(enviado) ? enviado : enviado.replace(' ', 'T') + 'Z').toISOString(), fecha, hora, portero, horas: horasSueno(valores.horas) };
   const obs = [];
   for (const [k, nombre] of Object.entries(ESCALAS)) {
     const max = k === 'dolor' ? dolorMax : 5;
     const raw = valores[k];
-    const v = raw === undefined || raw === null || raw === '' ? null : Number(String(raw).trim());
+    const num = String(raw ?? '').match(/^\s*(\d+(?:[.,]\d+)?)/); // «3», 3 o «3 estrellas»
+    const v = raw === undefined || raw === null || raw === '' ? null : num ? Number(num[1].replace(',', '.')) : NaN;
     if (v === null) { out[k] = null; continue; }
     if (!Number.isInteger(v) || v < 1 || v > max) { out[k] = null; avisos.push(`${quien}: ${nombre} = ${raw} fuera de 1-${max}; celda vacía`); continue; }
     if (k === 'dolor' && max === 10) { out[k] = Math.ceil(v / 2); obs.push(`Dolor ${v}/10 → ${out[k]}/5`); } else out[k] = v;
@@ -85,7 +92,7 @@ function juntar(envios, ctx) {
     if (!String(e.valores.nombre ?? '').trim()) { avisos.push(`Envío ${e.id} sin nombre: no se puede saber de quién es`); continue; }
     const r = fila(e, ctx);
     filas.push(r.fila);
-    avisos.push(...r.avisos);
+    for (const a of r.avisos) if (!avisos.includes(a)) avisos.push(a);
   }
   return { filas, avisos };
 }
@@ -101,7 +108,7 @@ export function desdeApi(payload, opts = {}) {
     for (const r of s.responses ?? []) {
       const c = preguntas.get(r.questionId)?.campo;
       if (!c) continue;
-      const v = r.formattedAnswer ?? r.answer;
+      const v = typeof r.answer === 'number' ? r.answer : r.formattedAnswer ?? r.answer; // escalas: el número; opciones: el texto
       if (c === 'molZonas') zonas = Array.isArray(r.answer) && r.answer.every(x => typeof x === 'string') && !r.formattedAnswer ? r.answer : String(v ?? '').split(',');
       else valores[c] = Array.isArray(v) ? v.join(', ') : v;
     }

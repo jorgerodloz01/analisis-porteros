@@ -37,8 +37,14 @@ test('fechaMadrid: el día y la hora salen en hora de Madrid (cambia el día pas
   assert.deepEqual(fechaMadrid('2026-07-03 11:41:31'), { fecha: '2026-07-03', hora: '13:41' }); // formato del CSV, en UTC
 });
 
+test('horasSueno: las opciones del formulario actual van al centro de su franja', () => {
+  assert.equal(horasSueno('Menos de 5 horas'), 4.5);
+  assert.equal(horasSueno('5 - 6 horas'), 5.5);
+  assert.equal(horasSueno('7 - 8 horas'), 7.5);
+  assert.equal(horasSueno('+ 8 horas'), 8.5);
+});
+
 test('horasSueno: número aunque venga como texto', () => {
-  assert.equal(horasSueno('+ 8 horas'), 8);
   assert.equal(horasSueno('7 horas'), 7);
   assert.equal(horasSueno('6,5'), 6.5);
   assert.equal(horasSueno(7), 7);
@@ -60,7 +66,7 @@ test('desdeApi: una respuesta completa se convierte en la fila de WELLNESS', () 
   assert.equal(f.id, 'abc');
   assert.equal(f.fecha, '2026-11-27');
   assert.equal(f.portero, 'Jonatan Morilla');
-  assert.deepEqual([f.sueno, f.horas, f.fatigaFisica, f.fatigaMental, f.estres, f.tiesura], [2, 8, 3, 2, 1, 2]);
+  assert.deepEqual([f.sueno, f.horas, f.fatigaFisica, f.fatigaMental, f.estres, f.tiesura], [2, 8.5, 3, 2, 1, 2]);
   assert.equal(f.dolor, 2, 'dolor 4/10 → 2/5');
   assert.match(f.observaciones, /Dolor 4\/10 → 2\/5/);
   assert.ok(!/Nada|Sin dolor/.test(f.observaciones), 'sin molestias no ensucia las observaciones');
@@ -128,6 +134,23 @@ test('desdeCsv: el export real de Tally (julio) da la misma fila que la API', ()
   const { filas } = desdeCsv(csv, { porteros: PORTEROS });
   assert.equal(filas.length, 1);
   const f = filas[0];
-  assert.deepEqual([f.id, f.fecha, f.portero, f.sueno, f.horas, f.fatigaFisica, f.fatigaMental, f.estres, f.dolor, f.tiesura], ['5Xvyo7M', '2026-07-03', 'Jonatan Morilla', 2, 8, 4, 3, 3, 1, 2]);
+  assert.deepEqual([f.id, f.fecha, f.portero, f.sueno, f.horas, f.fatigaFisica, f.fatigaMental, f.estres, f.dolor, f.tiesura], ['5Xvyo7M', '2026-07-03', 'Jonatan Morilla', 2, 8.5, 4, 3, 3, 1, 2]);
   assert.ok(!/Molestias/.test(f.observaciones));
+});
+
+test('escalas de estrellas: vale el número aunque Tally lo dé como «3 estrellas»', () => {
+  const p = payload([{ at: '2026-11-27T08:00:00Z', r: R() }], { dolor: 'dolor5' });
+  for (const r of p.submissions[0].responses) if (typeof r.answer === 'number') r.formattedAnswer = `${r.answer} estrellas`;
+  const { filas, avisos } = desdeApi(p, { porteros: PORTEROS });
+  assert.deepEqual([filas[0].sueno, filas[0].fatigaFisica, filas[0].dolor], [2, 3, 4]);
+  assert.deepEqual(avisos, []);
+  for (const r of p.submissions[0].responses) if (typeof r.answer === 'number') { r.answer = null; }
+  assert.equal(desdeApi(p, { porteros: PORTEROS }).filas[0].sueno, 2, 'solo con el texto también');
+});
+
+test('portero que no está en la lista: un solo aviso aunque envíe muchos días', () => {
+  const subs = [1, 2, 3].map(d => ({ at: `2026-11-2${d}T08:00:00Z`, r: R({ nombre: 'Lluis Tarrés' }) }));
+  const { filas, avisos } = desdeApi(payload(subs), { porteros: PORTEROS });
+  assert.equal(filas.length, 3);
+  assert.equal(avisos.filter(a => a.includes('Lluis Tarrés')).length, 1);
 });

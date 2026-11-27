@@ -57,19 +57,28 @@ export function drawMarkers(svg, marks) {
   return svg;
 }
 
-// Portería vista desde el campo. Celda 0 = arriba-izquierda, fila a fila.
+// Portería vista desde el campo. Celdas 0-8 dentro (0 = arriba-izquierda, fila a fila);
+// fuera: 9 = por la izquierda, 10 = por encima del larguero, 11 = por la derecha (siempre vista desde el campo).
 // counts: {[cell]: texto} opcional para informes; highlight: celda seleccionada.
+export const FUERA = { 9: 'Fuera · izquierda', 10: 'Fuera · alto', 11: 'Fuera · derecha' };
 export function goalSVG({ onTap, highlight, counts } = {}) {
-  const svg = s('svg', { viewBox: '-8 -8 316 126', class: 'goal', 'aria-label': 'Portería vista desde el campo' });
-  svg.append(s('rect', { x: -8, y: -8, width: 316, height: 126, fill: '#16223b' }), s('rect', { x: -8, y: 108, width: 316, height: 10, fill: '#1f7a3a' }));
+  const svg = s('svg', { viewBox: '-64 -44 428 162', class: 'goal', 'aria-label': 'Portería vista desde el campo' });
+  svg.append(s('rect', { x: -64, y: -44, width: 428, height: 162, fill: '#16223b' }), s('rect', { x: -64, y: 108, width: 428, height: 10, fill: '#1f7a3a' }));
+  const zona = (c, x, y, width, height, fill, textoX, textoY) => {
+    const el = s('rect', { x, y, width, height, rx: 3, 'data-cell': c, fill: c === highlight ? (c >= 9 ? '#f59e0b' : '#3b82f6') : fill,
+      stroke: 'rgba(255,255,255,.35)', 'stroke-dasharray': '3 3', style: onTap ? 'cursor:pointer' : null });
+    if (onTap) el.addEventListener('click', () => onTap(c));
+    svg.append(el);
+    const txt = counts?.[c] ?? (c >= 9 && !counts ? 'Fuera' : null);
+    if (txt) svg.append(s('text', { x: textoX, y: textoY, 'text-anchor': 'middle', 'font-size': c >= 9 ? 13 : 16, fill: c >= 9 && !counts?.[c] ? 'rgba(255,255,255,.55)' : '#fff', 'font-weight': 700, 'pointer-events': 'none' }, txt));
+  };
+  zona(9, -60, -40, 54, 146, 'rgba(255,255,255,.02)', -33, 40);
+  zona(11, 306, -40, 54, 146, 'rgba(255,255,255,.02)', 333, 40);
+  zona(10, -4, -40, 308, 34, 'rgba(255,255,255,.02)', 150, -18);
   for (let c = 0; c < 9; c++) {
     const x = (c % 3) * 100, y = Math.floor(c / 3) * 36;
-    const cellEl = s('rect', { x: x + 1, y: y + 1, width: 98, height: 34, rx: 3, 'data-cell': c,
-      fill: c === highlight ? '#3b82f6' : 'rgba(255,255,255,.06)', stroke: 'rgba(255,255,255,.35)', 'stroke-dasharray': '3 3', style: onTap ? 'cursor:pointer' : null });
-    if (onTap) cellEl.addEventListener('click', () => onTap(c));
-    svg.append(cellEl);
-    if (counts?.[c]) svg.append(s('text', { x: x + 50, y: y + 24, 'text-anchor': 'middle', 'font-size': 16, fill: '#fff', 'font-weight': 700, 'pointer-events': 'none' }, counts[c]));
+    zona(c, x + 1, y + 1, 98, 34, 'rgba(255,255,255,.06)', x + 50, y + 24);
   }
-  svg.append(s('path', { d: 'M0 108 V0 H300 V108', fill: 'none', stroke: '#fff', 'stroke-width': 6 }));
+  svg.append(s('path', { d: 'M0 108 V0 H300 V108', fill: 'none', stroke: '#fff', 'stroke-width': 6, 'pointer-events': 'none' }));
   return svg;
 }

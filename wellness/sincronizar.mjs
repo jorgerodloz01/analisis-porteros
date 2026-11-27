@@ -3,6 +3,7 @@
 //   node wellness\sincronizar.mjs --simular        → enseña lo que haría, sin tocar el Excel
 //   node wellness\sincronizar.mjs                  → escribe en el Excel (tiene que estar cerrado)
 //   node wellness\sincronizar.mjs --csv RUTA.csv   → igual, pero con el CSV descargado de Tally en vez de la API
+//   node wellness\sincronizar.mjs --todo           → también días anteriores al último que ya tiene datos en el Excel
 //   node wellness\sincronizar.mjs --reparar-dashboard   → reintroduce las fórmulas TAKE del DASHBOARD (una vez)
 //   node wellness\sincronizar.mjs --olvidar-clave  → borra la clave de Tally guardada en este PC
 import { readFile, writeFile, mkdir, appendFile, unlink } from 'node:fs/promises';
@@ -19,6 +20,7 @@ const args = process.argv.slice(2);
 const opt = n => { const i = args.indexOf(n); return i === -1 ? null : args[i + 1]; };
 const flag = n => args.includes(n);
 
+const FORMULARIO_DEFECTO = 'WOd9BL'; // https://tally.so/r/WOd9BL · Cuestionario Wellness L'Escala
 const LIBRO_DEFECTO = "C:\\Users\\jorge\\OneDrive\\Escritorio\\TEMPORADA 26-27\\PREPARACIÓN FÍSICA\\SISTEMA MONITORIZACIÓN PORTEROS L'ESCALA 26-27 MAESTRO.xlsx";
 const DIR_CLAVE = join(process.env.APPDATA ?? join(homedir(), '.config'), 'porteros');
 const ARCHIVO_CLAVE = join(DIR_CLAVE, 'tally.json'); // fuera de OneDrive y fuera de git
@@ -67,7 +69,7 @@ async function leerTally(cfg, porteros) {
     console.log(`Clave guardada en ${ARCHIVO_CLAVE} (solo en este PC).`);
   }
   const api = ruta => llamarApi(clave, ruta);
-  let formId = cfg.formId ?? guardado.formId;
+  let formId = cfg.formId ?? guardado.formId ?? FORMULARIO_DEFECTO;
   if (!formId) {
     formId = elegirFormulario(await api('/forms'));
     if (!formId) formId = idDesdeEnlace(await pregunta('No encuentro un único formulario con «wellness» en el nombre. Pega su enlace (tally.so/r/...): '));
@@ -98,8 +100,9 @@ async function main() {
   const tmp = join(tmpdir(), 'wellness-filas.json');
   await writeFile(tmp, JSON.stringify(filas), 'utf8');
   const simular = flag('--simular');
-  const r = await powershell('excel-anadir.ps1', ['-Libro', libro, '-Datos', tmp, ...(simular ? ['-Simular'] : [])]);
-  const resumen = `${simular ? 'SIMULACIÓN (no se ha guardado nada) · ' : ''}Nuevas: ${r.anadidas} · En días ya creados vacíos: ${r.rellenadas} · Ya estaban: ${r.yaEstaban}`;
+  const r = await powershell('excel-anadir.ps1', ['-Libro', libro, '-Datos', tmp, ...(simular ? ['-Simular'] : []), ...(flag('--todo') ? ['-Todo'] : [])]);
+  const resumen = `${simular ? 'SIMULACIÓN (no se ha guardado nada) · ' : ''}Nuevas: ${r.anadidas} · En días ya creados vacíos: ${r.rellenadas} · Ya estaban: ${r.yaEstaban}`
+    + (r.anteriores ? ` · Anteriores al ${r.ultimoDia} (no se tocan; --todo para incluirlas): ${r.anteriores}` : '');
   console.log(resumen);
   if (r.fechas?.length) console.log('  ' + r.fechas.join('\n  '));
   if (!simular) await appendFile(REGISTRO, `${new Date().toISOString()} ${resumen}\n`, 'utf8');

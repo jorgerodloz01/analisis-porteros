@@ -3,7 +3,8 @@
 param(
   [Parameter(Mandatory = $true)][string]$Libro,
   [Parameter(Mandatory = $true)][string]$Datos,
-  [switch]$Simular
+  [switch]$Simular,
+  [switch]$Todo   # sin él, solo se escriben días desde el último que ya tiene datos (la historia escrita a mano no se toca)
 )
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -36,7 +37,7 @@ try {
   $cEscalas = @('Calidad del sueño', 'Fatiga física', 'Fatiga mental', 'Estrés', 'Dolor muscular', 'Tiesura general') | ForEach-Object { $col[$_] }
 
   # Lo que ya hay: fecha|portero → fila (y si tiene datos o es un día preparado vacío); filas totalmente libres.
-  $mapa = @{}; $libres = New-Object System.Collections.Generic.List[int]
+  $mapa = @{}; $libres = New-Object System.Collections.Generic.List[int]; $ultimoDia = $null
   $body = $lo.DataBodyRange
   $n = 0; if ($body -ne $null) { $n = $body.Rows.Count; $v = $body.Value2 }
   for ($i = 1; $i -le $n; $i++) {
@@ -45,11 +46,14 @@ try {
     try { if ($f -is [double]) { $d = [DateTime]::FromOADate($f) } else { $d = [DateTime]::Parse([string]$f, $es) } } catch { continue }
     $tiene = $false
     foreach ($c in $cEscalas) { if ($v[$i, $c] -ne $null -and [string]$v[$i, $c] -ne '') { $tiene = $true } }
-    $mapa[$d.ToString('yyyy-MM-dd') + '|' + $p.Trim().ToLower()] = @{ fila = $i; tiene = $tiene }
+    $dia = $d.ToString('yyyy-MM-dd')
+    $mapa[$dia + '|' + $p.Trim().ToLower()] = @{ fila = $i; tiene = $tiene }
+    if ($tiene -and ($ultimoDia -eq $null -or $dia -gt $ultimoDia)) { $ultimoDia = $dia }
   }
 
-  $anadidas = 0; $rellenadas = 0; $yaEstaban = 0; $fechas = @()
+  $anadidas = 0; $rellenadas = 0; $yaEstaban = 0; $anteriores = 0; $fechas = @()
   foreach ($r in $filas) {
+    if (-not $Todo -and $ultimoDia -ne $null -and $r.fecha -lt $ultimoDia) { $anteriores++; continue }
     $k = $r.fecha + '|' + ([string]$r.portero).Trim().ToLower()
     if ($mapa.ContainsKey($k) -and $mapa[$k].tiene) { $yaEstaban++; continue }
     if ($mapa.ContainsKey($k)) { $i = $mapa[$k].fila; $rellenadas++ }
@@ -67,7 +71,7 @@ try {
     $mapa[$k] = @{ fila = $i; tiene = $true }
   }
   if (-not $Simular -and ($anadidas + $rellenadas) -gt 0) { $wb.Save() }
-  Salir @{ anadidas = $anadidas; rellenadas = $rellenadas; yaEstaban = $yaEstaban; fechas = $fechas; simulado = [bool]$Simular } 0
+  Salir @{ anadidas = $anadidas; rellenadas = $rellenadas; yaEstaban = $yaEstaban; anteriores = $anteriores; ultimoDia = $ultimoDia; fechas = $fechas; simulado = [bool]$Simular } 0
 }
 catch { Salir @{ error = "Excel: $($_.Exception.Message)" } 1 }
 finally {

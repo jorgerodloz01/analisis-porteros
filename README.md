@@ -101,6 +101,8 @@ Te pide la clave de la API (Tally → Settings → API keys) y la guarda solo en
 **Reglas:**
 - Un wellness por portero y día: si alguien envía dos veces, vale el último (si no, el readiness sumaría los dos).
 - Si el día ya tiene datos en el Excel, no se toca; si es un día preparado vacío, se rellena; si no existe, va a la primera fila libre.
+- Solo escribe días desde el último que ya tiene datos en el Excel: la historia escrita a mano no se toca. `--todo` para incluir también días anteriores.
+- Horas de sueño: el centro de la franja elegida (menos de 5 → 4,5; 5-6 → 5,5; 7-8 → 7,5; +8 → 8,5).
 - Dolor: si la pregunta de Tally es de 1 a 10, se pasa a 1-5 (1-2→1, 3-4→2, 5-6→3, 7-8→4, 9-10→5) y queda anotado en Observaciones. Cuando la pregunta sea de 1 a 5, no se convierte.
 - Molestias (zonas marcadas y texto) van a Observaciones. Valores fuera de escala: celda vacía y aviso.
 - Apodos («Jona», «Uri») → nombre del Excel. Un nombre desconocido entra igual y sale un aviso.
