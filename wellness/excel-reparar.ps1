@@ -22,6 +22,7 @@ function Sin-Take([string]$f) {
   return $f
 }
 
+. (Join-Path $PSScriptRoot 'excel-com.ps1')
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $resultado = $null; $codigo = 0; $xl = $null; $wb = $null; $copia = $null
@@ -41,6 +42,7 @@ try {
   $xl.Visible = $false; $xl.DisplayAlerts = $false; $xl.ScreenUpdating = $false
   $wb = $xl.Workbooks.Open($abrir, 0, $false)
   if ($wb -eq $null) { $codigo = 2; throw $MSG_ABIERTO }
+  $xl.Calculation = $XL_CALCULO_MANUAL
   $prueba = $wb.Worksheets.Add()
   $prueba.Range('A1').Formula2 = '=TAKE({1;2},-1)'
   $xl.Calculate()
@@ -77,7 +79,7 @@ try {
   foreach ($p in ($Porteros -split '\|')) {
     if ($p -and -not ($existentes -contains $p)) { $cfg.Cells.Item($fila, 1).Value2 = $p; $fila++; $anadidos += $p }
   }
-  if ($cambiadas -gt 0 -or $anadidos.Count -gt 0) { $wb.Save() }
+  if ($cambiadas -gt 0 -or $anadidos.Count -gt 0) { Guardar-Libro $xl $wb }
   $resultado = @{ cambiadas = $cambiadas; sinCambiar = $sinCambiar; tieneTake = $tieneTake; anadidos = $anadidos }
 }
 catch {
@@ -89,6 +91,7 @@ catch {
 finally {
   if ($wb -ne $null) { try { $wb.Close($false) } catch { } }
   if ($xl -ne $null) { try { $xl.Quit() } catch { }; [void][Runtime.InteropServices.Marshal]::ReleaseComObject($xl) }
+  try { [FiltroMensajesOle]::Quitar() } catch { }
   $wb = $null; $xl = $null
   [GC]::Collect(); [GC]::WaitForPendingFinalizers()
   if ($copia) { Remove-Item -LiteralPath $copia -ErrorAction SilentlyContinue }

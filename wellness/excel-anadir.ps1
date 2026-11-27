@@ -8,6 +8,11 @@ param(
 )
 # ConvertFrom-Json (Windows PowerShell 5.1) da los decimales como [decimal] y Excel no los acepta por COM: van como [double].
 function Valor($v) { if ($v -is [string] -or $v -is [bool]) { return $v }; return [double]$v }
+function Poner($celda, $valor, $que) {
+  $v = Valor $valor
+  try { $celda.Value2 = $v } catch { throw "No pude escribir «$que» = '$valor' ($($valor.GetType().Name)): $($_.Exception.Message)" }
+}
+. (Join-Path $PSScriptRoot 'excel-com.ps1')
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $resultado = $null; $codigo = 0; $xl = $null; $wb = $null; $copia = $null
@@ -27,6 +32,7 @@ try {
   $xl.Visible = $false; $xl.DisplayAlerts = $false; $xl.ScreenUpdating = $false
   $wb = $xl.Workbooks.Open($abrir, 0, $false)
   if ($wb -eq $null) { $codigo = 2; throw $MSG_ABIERTO }
+  $xl.Calculation = $XL_CALCULO_MANUAL
 
   # -InputObject: en Windows PowerShell 5.1 un array JSON por tubería llega como un solo objeto.
   $filas = ConvertFrom-Json -InputObject (Get-Content -Raw -Encoding UTF8 -LiteralPath $Datos)
@@ -73,11 +79,11 @@ try {
     $body.Cells.Item($i, $col['Portero']).Value2 = [string]$r.portero
     foreach ($kv in $campos.GetEnumerator()) {
       $valor = $r.($kv.Key)
-      if ($valor -ne $null -and [string]$valor -ne '') { $body.Cells.Item($i, $col[$kv.Value]).Value2 = (Valor $valor) }
+      if ($valor -ne $null -and [string]$valor -ne '') { $celda = $body.Cells.Item($i, $col[$kv.Value]); Poner $celda $valor $kv.Value }
     }
     $mapa[$k] = @{ fila = $i; tiene = $true }
   }
-  if (-not $Simular -and ($anadidas + $rellenadas) -gt 0) { $wb.Save() }
+  if (-not $Simular -and ($anadidas + $rellenadas) -gt 0) { Guardar-Libro $xl $wb }
   $resultado = @{ anadidas = $anadidas; rellenadas = $rellenadas; yaEstaban = $yaEstaban; anteriores = $anteriores; ultimoDia = $ultimoDia; fechas = $fechas; simulado = [bool]$Simular }
 }
 catch {
@@ -89,6 +95,7 @@ catch {
 finally {
   if ($wb -ne $null) { try { $wb.Close($false) } catch { } }
   if ($xl -ne $null) { try { $xl.Quit() } catch { }; [void][Runtime.InteropServices.Marshal]::ReleaseComObject($xl) }
+  try { [FiltroMensajesOle]::Quitar() } catch { }
   $wb = $null; $xl = $null
   [GC]::Collect(); [GC]::WaitForPendingFinalizers()
   if ($copia) { Remove-Item -LiteralPath $copia -ErrorAction SilentlyContinue }
