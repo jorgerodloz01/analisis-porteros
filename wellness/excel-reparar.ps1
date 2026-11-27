@@ -1,10 +1,7 @@
 ﻿# Reintroduce las fórmulas con TAKE del Excel (el archivo las trae grabadas como _xludf.TAKE y Excel las da por error,
 # que el IFERROR esconde dejando el DASHBOARD en blanco). Si este Excel no tiene TAKE, la cambia por INDEX(...;FILAS(...)).
 param([Parameter(Mandatory = $true)][string]$Libro, [string]$Porteros = '')
-$ErrorActionPreference = 'Stop'
-[Console]::OutputEncoding = [Text.Encoding]::UTF8
-function Salir($obj, $code) { Write-Output ($obj | ConvertTo-Json -Compress -Depth 4); exit $code }
-
+$Simular = $false
 # TAKE(X,-1) → INDEX(X,ROWS(X)) respetando paréntesis y comillas. Si el segundo argumento no es -1, no lo toca.
 function Sin-Take([string]$f) {
   $desde = 0
@@ -25,16 +22,25 @@ function Sin-Take([string]$f) {
   return $f
 }
 
-if (-not (Test-Path -LiteralPath $Libro)) { Salir @{ error = "No encuentro el Excel: $Libro" } 3 }
-try { $fs = [IO.File]::Open($Libro, 'Open', 'ReadWrite', 'None'); $fs.Close() }
-catch { Salir @{ error = 'El Excel de monitorización está abierto. Ciérralo y vuelve a ejecutar.' } 2 }
-
-$xl = $null; $wb = $null
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$resultado = $null; $codigo = 0; $xl = $null; $wb = $null; $copia = $null
+$MSG_ABIERTO = 'El Excel de monitorización está abierto. Ciérralo y vuelve a ejecutar. Si no lo tienes abierto, se ha quedado un Excel en segundo plano: ciérralo con  Get-Process EXCEL | Where-Object { $_.MainWindowHandle -eq 0 } | Stop-Process'
 try {
+  if (-not (Test-Path -LiteralPath $Libro)) { throw "No encuentro el Excel: $Libro" }
+  $abrir = $Libro
+  if ($Simular) {
+    # La simulación trabaja sobre una copia: funciona aunque el Excel esté abierto y nunca toca el original.
+    $copia = Join-Path $env:TEMP ('simulacion-' + [guid]::NewGuid().ToString() + '.xlsx')
+    Copy-Item -LiteralPath $Libro -Destination $copia
+    $abrir = $copia
+  } else {
+    try { $fs = [IO.File]::Open($Libro, 'Open', 'ReadWrite', 'None'); $fs.Close() } catch { $codigo = 2; throw $MSG_ABIERTO }
+  }
   $xl = New-Object -ComObject Excel.Application
   $xl.Visible = $false; $xl.DisplayAlerts = $false; $xl.ScreenUpdating = $false
-  $wb = $xl.Workbooks.Open($Libro, 0, $false)
-
+  $wb = $xl.Workbooks.Open($abrir, 0, $false)
+  if ($wb -eq $null) { $codigo = 2; throw $MSG_ABIERTO }
   $prueba = $wb.Worksheets.Add()
   $prueba.Range('A1').Formula2 = '=TAKE({1;2},-1)'
   $xl.Calculate()
@@ -64,11 +70,20 @@ try {
     if ($p -and -not ($existentes -contains $p)) { $cfg.Cells.Item($fila, 1).Value2 = $p; $fila++; $anadidos += $p }
   }
   if ($cambiadas -gt 0 -or $anadidos.Count -gt 0) { $wb.Save() }
-  Salir @{ cambiadas = $cambiadas; sinCambiar = $sinCambiar; tieneTake = $tieneTake; anadidos = $anadidos } 0
+  $resultado = @{ cambiadas = $cambiadas; sinCambiar = $sinCambiar; tieneTake = $tieneTake; anadidos = $anadidos }
 }
-catch { Salir @{ error = "Excel: $($_.Exception.Message)" } 1 }
+catch {
+  if ($codigo -eq 0) { $codigo = 1 }
+  $msg = $_.Exception.Message
+  if ($codigo -eq 1) { $msg = "Excel (línea $($_.InvocationInfo.ScriptLineNumber)): $msg" }
+  $resultado = @{ error = $msg }
+}
 finally {
-  if ($wb -ne $null) { $wb.Close($false) | Out-Null }
-  if ($xl -ne $null) { $xl.Quit(); [void][Runtime.InteropServices.Marshal]::ReleaseComObject($xl) }
+  if ($wb -ne $null) { try { $wb.Close($false) } catch { } }
+  if ($xl -ne $null) { try { $xl.Quit() } catch { }; [void][Runtime.InteropServices.Marshal]::ReleaseComObject($xl) }
+  $wb = $null; $xl = $null
   [GC]::Collect(); [GC]::WaitForPendingFinalizers()
+  if ($copia) { Remove-Item -LiteralPath $copia -ErrorAction SilentlyContinue }
 }
+Write-Output ($resultado | ConvertTo-Json -Compress -Depth 4)
+exit $codigo

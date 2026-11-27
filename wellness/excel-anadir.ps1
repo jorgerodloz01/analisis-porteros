@@ -8,23 +8,28 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
-function Salir($obj, $code) { Write-Output ($obj | ConvertTo-Json -Compress -Depth 4); exit $code }
-
-if (-not (Test-Path -LiteralPath $Libro)) { Salir @{ error = "No encuentro el Excel: $Libro" } 3 }
-if (-not $Simular) {
-  try { $fs = [IO.File]::Open($Libro, 'Open', 'ReadWrite', 'None'); $fs.Close() }
-  catch { Salir @{ error = 'El Excel de monitorización está abierto. Ciérralo y vuelve a ejecutar.' } 2 }
-}
-
-# -InputObject: en Windows PowerShell 5.1 un array JSON por tubería llega como un solo objeto.
-$filas = ConvertFrom-Json -InputObject (Get-Content -Raw -Encoding UTF8 -LiteralPath $Datos)
-if ($filas -eq $null) { $filas = @() }
-$es = [Globalization.CultureInfo]::GetCultureInfo('es-ES')
-$xl = $null; $wb = $null
+$resultado = $null; $codigo = 0; $xl = $null; $wb = $null; $copia = $null
+$MSG_ABIERTO = 'El Excel de monitorización está abierto. Ciérralo y vuelve a ejecutar. Si no lo tienes abierto, se ha quedado un Excel en segundo plano: ciérralo con  Get-Process EXCEL | Where-Object { $_.MainWindowHandle -eq 0 } | Stop-Process'
 try {
+  if (-not (Test-Path -LiteralPath $Libro)) { throw "No encuentro el Excel: $Libro" }
+  $abrir = $Libro
+  if ($Simular) {
+    # La simulación trabaja sobre una copia: funciona aunque el Excel esté abierto y nunca toca el original.
+    $copia = Join-Path $env:TEMP ('simulacion-' + [guid]::NewGuid().ToString() + '.xlsx')
+    Copy-Item -LiteralPath $Libro -Destination $copia
+    $abrir = $copia
+  } else {
+    try { $fs = [IO.File]::Open($Libro, 'Open', 'ReadWrite', 'None'); $fs.Close() } catch { $codigo = 2; throw $MSG_ABIERTO }
+  }
   $xl = New-Object -ComObject Excel.Application
   $xl.Visible = $false; $xl.DisplayAlerts = $false; $xl.ScreenUpdating = $false
-  $wb = $xl.Workbooks.Open($Libro, 0, [bool]$Simular)
+  $wb = $xl.Workbooks.Open($abrir, 0, $false)
+  if ($wb -eq $null) { $codigo = 2; throw $MSG_ABIERTO }
+
+  # -InputObject: en Windows PowerShell 5.1 un array JSON por tubería llega como un solo objeto.
+  $filas = ConvertFrom-Json -InputObject (Get-Content -Raw -Encoding UTF8 -LiteralPath $Datos)
+  if ($filas -eq $null) { $filas = @() }
+  $es = [Globalization.CultureInfo]::GetCultureInfo('es-ES')
   $lo = $wb.Worksheets.Item('WELLNESS').ListObjects.Item('tblWellness')
 
   # Columnas por su título (así da igual si algún día se mueven).
@@ -33,7 +38,7 @@ try {
   for ($c = 1; $c -le $lo.ListColumns.Count; $c++) { $col[[string]$hdr[1, $c]] = $c }
   $campos = [ordered]@{ sueno = 'Calidad del sueño'; horas = 'Horas de sueño'; fatigaFisica = 'Fatiga física'; fatigaMental = 'Fatiga mental';
     estres = 'Estrés'; dolor = 'Dolor muscular'; tiesura = 'Tiesura general'; observaciones = 'Observaciones' }
-  foreach ($t in @('Fecha', 'Portero') + @($campos.Values)) { if (-not $col.ContainsKey($t)) { Salir @{ error = "En la tabla tblWellness falta la columna «$t»." } 4 } }
+  foreach ($t in @('Fecha', 'Portero') + @($campos.Values)) { if (-not $col.ContainsKey($t)) { throw "En la tabla tblWellness falta la columna «$t»." } }
   $cEscalas = @('Calidad del sueño', 'Fatiga física', 'Fatiga mental', 'Estrés', 'Dolor muscular', 'Tiesura general') | ForEach-Object { $col[$_] }
 
   # Lo que ya hay: fecha|portero → fila (y si tiene datos o es un día preparado vacío); filas totalmente libres.
@@ -71,11 +76,20 @@ try {
     $mapa[$k] = @{ fila = $i; tiene = $true }
   }
   if (-not $Simular -and ($anadidas + $rellenadas) -gt 0) { $wb.Save() }
-  Salir @{ anadidas = $anadidas; rellenadas = $rellenadas; yaEstaban = $yaEstaban; anteriores = $anteriores; ultimoDia = $ultimoDia; fechas = $fechas; simulado = [bool]$Simular } 0
+  $resultado = @{ anadidas = $anadidas; rellenadas = $rellenadas; yaEstaban = $yaEstaban; anteriores = $anteriores; ultimoDia = $ultimoDia; fechas = $fechas; simulado = [bool]$Simular }
 }
-catch { Salir @{ error = "Excel: $($_.Exception.Message)" } 1 }
+catch {
+  if ($codigo -eq 0) { $codigo = 1 }
+  $msg = $_.Exception.Message
+  if ($codigo -eq 1) { $msg = "Excel (línea $($_.InvocationInfo.ScriptLineNumber)): $msg" }
+  $resultado = @{ error = $msg }
+}
 finally {
-  if ($wb -ne $null) { $wb.Close($false) | Out-Null }
-  if ($xl -ne $null) { $xl.Quit(); [void][Runtime.InteropServices.Marshal]::ReleaseComObject($xl) }
+  if ($wb -ne $null) { try { $wb.Close($false) } catch { } }
+  if ($xl -ne $null) { try { $xl.Quit() } catch { }; [void][Runtime.InteropServices.Marshal]::ReleaseComObject($xl) }
+  $wb = $null; $xl = $null
   [GC]::Collect(); [GC]::WaitForPendingFinalizers()
+  if ($copia) { Remove-Item -LiteralPath $copia -ErrorAction SilentlyContinue }
 }
+Write-Output ($resultado | ConvertTo-Json -Compress -Depth 4)
+exit $codigo
