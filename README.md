@@ -95,7 +95,7 @@ git pull
 node wellness\sincronizar.mjs --simular
 ```
 
-Te pide la clave de la API (Tally → Settings → API keys) y la guarda solo en este PC (`%APPDATA%\porteros\tally.json`). `--simular` enseña qué filas añadiría sin guardar nada. Si está bien, repite sin `--simular`. Una sola vez: `node wellness\sincronizar.mjs --preparar-excel` (reintroduce las fórmulas TAKE del DASHBOARD, que el archivo traía mal grabadas, y añade a Lluis Tarrés a la lista de porteros de CONFIG).
+Te pide la clave de la API (Tally → Settings → API keys) y la guarda solo en este PC (`%APPDATA%\porteros\tally.json`). `--simular` enseña qué filas añadiría sin guardar nada. Si está bien, repite sin `--simular`. Una sola vez: `node wellness\sincronizar.mjs --preparar-excel` (reintroduce las fórmulas TAKE del DASHBOARD y AGGREGATE de FUERZA, que el archivo traía mal grabadas, y añade a Lluis Tarrés a la lista de porteros de CONFIG).
 
 **Día a día:** doble clic en **«Actualizar wellness.cmd»** con el Excel cerrado.
 

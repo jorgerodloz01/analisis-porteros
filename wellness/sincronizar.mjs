@@ -95,7 +95,7 @@ async function main() {
   if (flag('--olvidar-clave')) { await unlink(ARCHIVO_CLAVE).catch(() => {}); console.log('Clave de Tally borrada de este PC.'); return; }
   if (flag('--preparar-excel') || flag('--reparar-dashboard')) {
     const r = await powershell('excel-reparar.ps1', ['-Libro', libro, '-Porteros', porteros.join('|')]);
-    console.log(`DASHBOARD: ${r.cambiadas} fórmulas reintroducidas${r.tieneTake ? '' : ' (tu Excel no tiene TAKE: cambiadas por INDEX)'}${r.sinCambiar ? `; ${r.sinCambiar} sin tocar` : ''}.`);
+    console.log(`Fórmulas: ${r.cambiadas} reintroducidas (DASHBOARD y FUERZA)${r.tieneTake ? '' : ' (tu Excel no tiene TAKE: cambiadas por INDEX)'}${r.sinCambiar ? `; ${r.sinCambiar} sin tocar` : ''}.`);
     console.log(r.anadidos?.length ? `CONFIG: añadido(s) ${r.anadidos.join(', ')} a la lista de porteros.` : 'CONFIG: la lista de porteros ya estaba completa.');
     return;
   }

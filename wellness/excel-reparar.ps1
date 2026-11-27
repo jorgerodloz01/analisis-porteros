@@ -1,4 +1,4 @@
-﻿# Reintroduce las fórmulas con TAKE del Excel (el archivo las trae grabadas como _xludf.TAKE y Excel las da por error,
+﻿# Reintroduce las fórmulas con TAKE y AGGREGATE del Excel (el archivo las trae grabadas como _xludf.TAKE y Excel las da por error,
 # que el IFERROR esconde dejando el DASHBOARD en blanco). Si este Excel no tiene TAKE, la cambia por INDEX(...;FILAS(...)).
 param([Parameter(Mandatory = $true)][string]$Libro, [string]$Porteros = '')
 $Simular = $false
@@ -49,12 +49,20 @@ try {
   $prueba.Delete()
 
   $celdas = New-Object System.Collections.Generic.List[object]
+  # Funciones que el archivo trae grabadas como _xludf.* (Excel las da por error): TAKE en el DASHBOARD, AGGREGATE en FUERZA.
+  $vistas = @{}
   foreach ($ws in $wb.Worksheets) {
     $usado = $ws.UsedRange
-    $primera = $usado.Find('TAKE(', [Type]::Missing, -4123, 2)   # xlFormulas, xlPart
-    if ($primera -eq $null) { continue }
-    $dir = $primera.Address(); $c = $primera
-    do { $celdas.Add($c); $c = $usado.FindNext($c) } while ($c -ne $null -and $c.Address() -ne $dir)
+    foreach ($termino in @('TAKE(', 'AGGREGATE(')) {
+      $primera = $usado.Find($termino, [Type]::Missing, -4123, 2)   # xlFormulas, xlPart
+      if ($primera -eq $null) { continue }
+      $dir = $primera.Address(); $c = $primera
+      do {
+        $clave = $ws.Name + '!' + $c.Address()
+        if (-not $vistas.ContainsKey($clave)) { $vistas[$clave] = $true; $celdas.Add($c) }
+        $c = $usado.FindNext($c)
+      } while ($c -ne $null -and $c.Address() -ne $dir)
+    }
   }
   $cambiadas = 0; $sinCambiar = 0
   foreach ($c in $celdas) {
