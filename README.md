@@ -64,7 +64,7 @@ Convierte un partido registrado en la app en el vídeo con todas las acciones de
    - `Vídeo Análisis <Portero> vs <Rival> J<n>.mp4`
    - `PARADAS <Portero> vs <Rival> J<n>.mp4` (en `PARADAS <PORTERO>` si existe)
 
-**Cómo corta:** la app apunta el minuto cuando eliges la acción. En la J11 ese minuto quedó unos segundos ANTES del remate (se pulsa al ver venir la jugada), así que cada clip deja más margen después: tiros y centros 8 s antes y 12 después; salidas, espalda y aéreos 8/10; distribución 4/8; ABP defensiva 12/15; marcas 10/8. Las acciones seguidas se unen en un solo clip. Puedes cambiar los márgenes copiando `video/config.ejemplo.json` como `video/config.json`.
+**Cómo corta:** la app apunta el minuto cuando eliges la acción, es decir, unos segundos después de la jugada, así que cada clip empieza antes: tiros y salidas 10 s antes y 4 después; centros 12/4; distribución 4/6; ABP defensiva 15/5; marcas 12/4. Las acciones seguidas se unen en un solo clip. Puedes cambiar los márgenes copiando `video/config.ejemplo.json` como `video/config.json`.
 
 El vídeo original no se modifica y nada sale de tu PC.
 

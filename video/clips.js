@@ -2,15 +2,14 @@
 import { TYPES, TABS } from '../js/catalog.js';
 import { minuteLabel } from '../js/logic.js';
 
-// Segundos [antes, después] del instante registrado. La app guarda el minuto al ELEGIR la acción.
-// En la J11 (22/11/2026) el minuto quedó 4-10 s ANTES del remate en 3 de las 4 paradas (se pulsa al ver
-// venir la jugada), así que la ventana deja más margen después que antes.
+// Segundos [antes, después] del instante registrado. La app guarda el minuto al ELEGIR la acción,
+// es decir, después de la jugada: por eso el margen de antes es mayor.
 export const VENTANAS = {
-  tiro: [8, 12], penalti: [8, 10], centro: [8, 12], aereo: [8, 10], espalda: [8, 10], salida: [8, 10],
-  pase: [4, 8], mano: [4, 8], volea: [4, 8], saque_puerta: [4, 8],
-  abp_def: [12, 15], abp_of: [8, 10], marca: [10, 8],
+  tiro: [10, 4], penalti: [8, 4], centro: [12, 4], aereo: [10, 4], espalda: [10, 4], salida: [10, 4],
+  pase: [4, 6], mano: [4, 6], volea: [4, 6], saque_puerta: [4, 6],
+  abp_def: [15, 5], abp_of: [8, 6], marca: [12, 4],
 };
-const POR_DEFECTO = [8, 10];
+const POR_DEFECTO = [10, 4];
 const UNION = 1; // clips separados por ≤ 1 s se unen
 
 const RESULT_KEYS = ['resultado', 'intervencion', 'participacion', 'etiqueta'];
