@@ -4,7 +4,7 @@
 //   node wellness\sincronizar.mjs                  → escribe en el Excel (tiene que estar cerrado)
 //   node wellness\sincronizar.mjs --csv RUTA.csv   → igual, pero con el CSV descargado de Tally en vez de la API
 //   node wellness\sincronizar.mjs --todo           → también días anteriores al último que ya tiene datos en el Excel
-//   node wellness\sincronizar.mjs --reparar-dashboard   → reintroduce las fórmulas TAKE del DASHBOARD (una vez)
+//   node wellness\sincronizar.mjs --preparar-excel → una vez: arregla las fórmulas TAKE del DASHBOARD y añade los porteros a CONFIG
 //   node wellness\sincronizar.mjs --olvidar-clave  → borra la clave de Tally guardada en este PC
 import { readFile, writeFile, mkdir, appendFile, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
@@ -83,12 +83,13 @@ async function leerTally(cfg, porteros) {
 async function main() {
   const cfg = await leerJson(join(AQUI, 'config.json'), {});
   const libro = opt('--libro') ?? cfg.libro ?? LIBRO_DEFECTO;
-  const porteros = cfg.porteros ?? ['Jonatan Morilla', 'Oriol Dalmau'];
+  const porteros = cfg.porteros ?? ['Jonatan Morilla', 'Oriol Dalmau', 'Lluis Tarrés'];
 
   if (flag('--olvidar-clave')) { await unlink(ARCHIVO_CLAVE).catch(() => {}); console.log('Clave de Tally borrada de este PC.'); return; }
-  if (flag('--reparar-dashboard')) {
-    const r = await powershell('excel-reparar.ps1', ['-Libro', libro]);
+  if (flag('--preparar-excel') || flag('--reparar-dashboard')) {
+    const r = await powershell('excel-reparar.ps1', ['-Libro', libro, '-Porteros', porteros.join('|')]);
     console.log(`DASHBOARD: ${r.cambiadas} fórmulas reintroducidas${r.tieneTake ? '' : ' (tu Excel no tiene TAKE: cambiadas por INDEX)'}${r.sinCambiar ? `; ${r.sinCambiar} sin tocar` : ''}.`);
+    console.log(r.anadidos?.length ? `CONFIG: añadido(s) ${r.anadidos.join(', ')} a la lista de porteros.` : 'CONFIG: la lista de porteros ya estaba completa.');
     return;
   }
 

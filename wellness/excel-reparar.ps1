@@ -1,6 +1,6 @@
 ﻿# Reintroduce las fórmulas con TAKE del Excel (el archivo las trae grabadas como _xludf.TAKE y Excel las da por error,
 # que el IFERROR esconde dejando el DASHBOARD en blanco). Si este Excel no tiene TAKE, la cambia por INDEX(...;FILAS(...)).
-param([Parameter(Mandatory = $true)][string]$Libro)
+param([Parameter(Mandatory = $true)][string]$Libro, [string]$Porteros = '')
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 function Salir($obj, $code) { Write-Output ($obj | ConvertTo-Json -Compress -Depth 4); exit $code }
@@ -57,8 +57,14 @@ try {
     if ($f -eq $null) { $sinCambiar++; continue }
     $c.Formula2 = $f; $cambiadas++
   }
-  if ($cambiadas -gt 0) { $wb.Save() }
-  Salir @{ cambiadas = $cambiadas; sinCambiar = $sinCambiar; tieneTake = $tieneTake } 0
+  # Porteros en CONFIG (columna A desde la fila 2), sin repetir ni tocar los que ya están.
+  $cfg = $wb.Worksheets.Item('CONFIG'); $fila = 2; $existentes = @(); $anadidos = @()
+  while ([string]$cfg.Cells.Item($fila, 1).Value2 -ne '') { $existentes += [string]$cfg.Cells.Item($fila, 1).Value2; $fila++ }
+  foreach ($p in ($Porteros -split '\|')) {
+    if ($p -and -not ($existentes -contains $p)) { $cfg.Cells.Item($fila, 1).Value2 = $p; $fila++; $anadidos += $p }
+  }
+  if ($cambiadas -gt 0 -or $anadidos.Count -gt 0) { $wb.Save() }
+  Salir @{ cambiadas = $cambiadas; sinCambiar = $sinCambiar; tieneTake = $tieneTake; anadidos = $anadidos } 0
 }
 catch { Salir @{ error = "Excel: $($_.Exception.Message)" } 1 }
 finally {

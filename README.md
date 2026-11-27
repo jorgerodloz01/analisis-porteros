@@ -87,14 +87,15 @@ El vídeo original no se modifica y nada sale de tu PC.
 
 Lee las respuestas del formulario de wellness por la API de Tally y las escribe en la tabla `tblWellness` (hoja WELLNESS) a través del propio Excel, como si las teclearas: no toca fórmulas, formatos ni gráficos, y puedes seguir escribiendo filas a mano.
 
-**Primera vez** (PowerShell, en la carpeta de la app; el Excel cerrado):
+**Primera vez** (PowerShell, en la carpeta de la app; el Excel cerrado). Si la carpeta no es un repositorio git (sale «not a git repository»), conviértela una vez con
+`git init -b main; git remote add origin https://github.com/jorgerodloz01/analisis-porteros.git; git fetch origin; git reset --hard origin/main; git branch -u origin/main`
 
 ```
 git pull
 node wellness\sincronizar.mjs --simular
 ```
 
-Te pide la clave de la API (Tally → Settings → API keys) y la guarda solo en este PC (`%APPDATA%\porteros\tally.json`). `--simular` enseña qué filas añadiría sin guardar nada. Si está bien, repite sin `--simular`. Una sola vez: `node wellness\sincronizar.mjs --reparar-dashboard` (reintroduce las fórmulas TAKE del DASHBOARD, que el archivo traía mal grabadas).
+Te pide la clave de la API (Tally → Settings → API keys) y la guarda solo en este PC (`%APPDATA%\porteros\tally.json`). `--simular` enseña qué filas añadiría sin guardar nada. Si está bien, repite sin `--simular`. Una sola vez: `node wellness\sincronizar.mjs --preparar-excel` (reintroduce las fórmulas TAKE del DASHBOARD, que el archivo traía mal grabadas, y añade a Lluis Tarrés a la lista de porteros de CONFIG).
 
 **Día a día:** doble clic en **«Actualizar wellness.cmd»** con el Excel cerrado.
 
