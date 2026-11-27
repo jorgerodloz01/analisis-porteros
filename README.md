@@ -82,3 +82,28 @@ El vídeo original no se modifica y nada sale de tu PC.
 - Pruebas en navegador (Playwright, tamaño iPad): `node e2e/setup.mjs`, `register-live.mjs`, `report.mjs`, `season.mjs` y `offline.mjs`
 - Iconos: `node scripts/make-icons.mjs`
 - Herramienta de vídeo: `npm run video`; prueba completa con vídeo sintético (ffmpeg + Playwright): `npm run e2e:video`
+
+## 7. Wellness de Tally → Excel de monitorización
+
+Lee las respuestas del formulario de wellness por la API de Tally y las escribe en la tabla `tblWellness` (hoja WELLNESS) a través del propio Excel, como si las teclearas: no toca fórmulas, formatos ni gráficos, y puedes seguir escribiendo filas a mano.
+
+**Primera vez** (PowerShell, en la carpeta de la app; el Excel cerrado):
+
+```
+git pull
+node wellness\sincronizar.mjs --simular
+```
+
+Te pide la clave de la API (Tally → Settings → API keys) y la guarda solo en este PC (`%APPDATA%\porteros\tally.json`). `--simular` enseña qué filas añadiría sin guardar nada. Si está bien, repite sin `--simular`. Una sola vez: `node wellness\sincronizar.mjs --reparar-dashboard` (reintroduce las fórmulas TAKE del DASHBOARD, que el archivo traía mal grabadas).
+
+**Día a día:** doble clic en **«Actualizar wellness.cmd»** con el Excel cerrado.
+
+**Reglas:**
+- Un wellness por portero y día: si alguien envía dos veces, vale el último (si no, el readiness sumaría los dos).
+- Si el día ya tiene datos en el Excel, no se toca; si es un día preparado vacío, se rellena; si no existe, va a la primera fila libre.
+- Dolor: si la pregunta de Tally es de 1 a 10, se pasa a 1-5 (1-2→1, 3-4→2, 5-6→3, 7-8→4, 9-10→5) y queda anotado en Observaciones. Cuando la pregunta sea de 1 a 5, no se convierte.
+- Molestias (zonas marcadas y texto) van a Observaciones. Valores fuera de escala: celda vacía y aviso.
+- Apodos («Jona», «Uri») → nombre del Excel. Un nombre desconocido entra igual y sale un aviso.
+- Sin API: `node wellness\sincronizar.mjs --csv RUTA_DEL_CSV` con el CSV descargado de Tally.
+
+Opcional: `wellness/config.json` con `{ "libro": "...", "porteros": ["..."], "alias": { "apodo": "Nombre" }, "formId": "..." }`. Cada sincronización queda apuntada en `wellness/registro.txt`.

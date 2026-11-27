@@ -1,3 +1,5 @@
 .superpowers/
 node_modules/
 e2e/shots/
+wellness/config.json
+wellness/registro.txt
