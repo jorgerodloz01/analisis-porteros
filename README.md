@@ -109,4 +109,9 @@ Te pide la clave de la API (Tally → Settings → API keys) y la guarda solo en
 - Apodos («Jona», «Uri») → nombre del Excel. Un nombre desconocido entra igual y sale un aviso.
 - Sin API: `node wellness\sincronizar.mjs --csv RUTA_DEL_CSV` con el CSV descargado de Tally.
 
+**RPE y carga (hoja CARGA Y READINESS):**
+- Una vez: `node wellness\sincronizar.mjs --crear-formularios` crea en tu Tally dos formularios y te da sus enlaces: «RPE de la sesión» (porteros: nombre, RPE 0-10 con la escala CR-10 de Foster y comentario) y «Sesión del día» (tú: microciclo, tipo de sesión, minutos y, si no es hoy, la fecha).
+- Los porteros responden el RPE unos 30 min después de entrenar; tú, la sesión del día. Cada sincronización junta los dos por fecha y escribe una fila por portero: nº de sesión (sigue la numeración del Excel), fecha, portero, microciclo, tipo, minutos, RPE y observaciones. sRPE, cargas y ACWR los calculan las fórmulas del Excel.
+- Si falta tu «Sesión del día», la fila entra sin minutos ni MD y se completa en la siguiente sincronización cuando la mandes. Nunca sobrescribe una celda que ya tenga algo.
+
 Opcional: `wellness/config.json` con `{ "libro": "...", "porteros": ["..."], "alias": { "apodo": "Nombre" }, "formId": "..." }`. Cada sincronización queda apuntada en `wellness/registro.txt`.

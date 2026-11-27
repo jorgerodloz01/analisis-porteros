@@ -3,10 +3,12 @@ import { normaliza } from './mapeo.js';
 
 const BASE = 'https://api.tally.so';
 
-export async function llamarApi(clave, ruta, fetchFn = fetch) {
+export async function llamarApi(clave, ruta, fetchFn = fetch, { method = 'GET', body } = {}) {
   let r;
+  const headers = { Authorization: 'Bearer ' + clave, Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
   try {
-    r = await fetchFn(BASE + ruta, { headers: { Authorization: 'Bearer ' + clave, Accept: 'application/json' } });
+    r = await fetchFn(BASE + ruta, { method, headers, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
   } catch (e) {
     throw new Error(`No se pudo conectar con Tally (${e.message}). ¿Hay internet?`);
   }

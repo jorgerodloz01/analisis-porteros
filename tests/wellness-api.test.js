@@ -35,3 +35,17 @@ test('llamarApi: clave mala → mensaje claro (no el error crudo)', async () => 
   const ok = async (url, o) => ({ ok: true, status: 200, json: async () => ({ url, auth: o.headers.Authorization }) });
   assert.deepEqual(await llamarApi('k1', '/forms', ok), { url: 'https://api.tally.so/forms', auth: 'Bearer k1' });
 });
+
+test('llamarApi: POST con cuerpo JSON (crear formularios)', async () => {
+  let visto;
+  const f = async (url, o) => { visto = o; return { ok: true, status: 201, json: async () => ({ id: 'nuevo' }) }; };
+  assert.deepEqual(await llamarApi('k1', '/forms', f, { method: 'POST', body: { status: 'PUBLISHED', blocks: [] } }), { id: 'nuevo' });
+  assert.equal(visto.method, 'POST');
+  assert.equal(visto.headers['Content-Type'], 'application/json');
+  assert.deepEqual(JSON.parse(visto.body), { status: 'PUBLISHED', blocks: [] });
+});
+
+test('llamarApi: si Tally rechaza el formulario (400), se ve su motivo', async () => {
+  const f = async () => ({ ok: false, status: 400, text: async () => '{"message":"Invalid payload for block"}' });
+  await assert.rejects(llamarApi('k1', '/forms', f, { method: 'POST', body: {} }), /400.*Invalid payload/);
+});
