@@ -6,8 +6,9 @@ param(
   [switch]$Simular,
   [switch]$Todo   # sin él, solo días desde el último que ya tiene RPE
 )
-# ConvertFrom-Json (Windows PowerShell 5.1) da los decimales como [decimal] y Excel no los acepta por COM: van como [double].
-function Valor($v) { if ($v -is [string] -or $v -is [bool]) { return $v }; return [double]$v }
+# Lo que sale de ConvertFrom-Json llega «envuelto» (PSObject) y Excel lo rechaza por COM con «La conversión especificada
+# no es válida». Con un cast explícito llega el valor tal cual: texto → [string], número → [double].
+function Valor($v) { if ($v -is [string]) { return [string]$v }; if ($v -is [bool]) { return [bool]$v }; return [double]$v }
 function Poner($celda, $valor, $que) {
   $v = Valor $valor
   try { $celda.Value2 = $v } catch { throw "No pude escribir «$que» = '$valor' ($($valor.GetType().Name)): $($_.Exception.Message)" }
@@ -81,7 +82,7 @@ try {
     $anadidas++; $fechas += "$($r.fecha) $($r.portero) · sesión $($sesionDe[$r.fecha]) · RPE $($r.rpe)"
     $mapa[$k] = $i
     if ($Simular) { continue }
-    $body.Cells.Item($i, $col['Nº de sesión']).Value2 = $sesionDe[$r.fecha]
+    $body.Cells.Item($i, $col['Nº de sesión']).Value2 = [double]$sesionDe[$r.fecha]
     $body.Cells.Item($i, $col['Fecha']).Value2 = [DateTime]::ParseExact($r.fecha, 'yyyy-MM-dd', $es).ToOADate()
     $body.Cells.Item($i, $col['Portero']).Value2 = [string]$r.portero
     foreach ($kv in $campos.GetEnumerator()) {
