@@ -9,9 +9,16 @@ param(
 # Lo que sale de ConvertFrom-Json llega «envuelto» (PSObject) y Excel lo rechaza por COM con «La conversión especificada
 # no es válida». Con un cast explícito llega el valor tal cual: texto → [string], número → [double].
 function Valor($v) { if ($v -is [string]) { return [string]$v }; if ($v -is [bool]) { return [bool]$v }; return [double]$v }
+# Escribe una celda probando tres vías; la 2.ª llama a Excel directamente (sin el adaptador COM de PowerShell),
+# que es la que falla con «La conversión especificada no es válida» al escribir texto.
 function Poner($celda, $valor, $que) {
   $v = Valor $valor
-  try { $celda.Value2 = $v } catch { throw "No pude escribir «$que» = '$valor' ($($valor.GetType().Name)): $($_.Exception.Message)" }
+  $fallos = @()
+  try { $celda.Value2 = $v; return } catch { $fallos += "Value2: $($_.Exception.Message)" }
+  try { [void][System.__ComObject].InvokeMember('Value2', [Reflection.BindingFlags]::SetProperty, $null, $celda, [object[]]@($v)); return }
+  catch { $fallos += "InvokeMember: $($_.Exception.Message)" }
+  if ($v -is [string]) { try { $celda.Formula = "'" + $v; return } catch { $fallos += "Formula: $($_.Exception.Message)" } }
+  throw "No pude escribir «$que» = '$valor' ($($valor.GetType().Name)): $($fallos -join ' | ')"
 }
 . (Join-Path $PSScriptRoot 'excel-com.ps1')
 $ErrorActionPreference = 'Stop'
